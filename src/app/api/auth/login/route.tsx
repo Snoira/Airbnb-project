@@ -10,6 +10,7 @@ const prisma = new PrismaClient()
 export async function POST(request: NextRequest) {
     try {
         const body: UserLoginData = await request.json()
+        console.log("BODY", body)
         const [hasErrors, errors] = loginValidation(body)
         if (hasErrors) {
             return NextResponse.json(
@@ -17,24 +18,28 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+        console.log("validated")
 
         const user = await prisma.user.findUniqueOrThrow({
             where: {
                 email: body.email.toLowerCase()
             }
         })
+        console.log("USER", user)
 
         const isPasswordMatch: boolean = await bcrypt.compare(body.password, user.password)
         if (!isPasswordMatch) {
             throw new Error("Wrong password")
         }
+        console.log("password is a match")
 
         const token = await signJWT(
             { userId: user.id }
         )
 
         return NextResponse.json(
-            { token: token }
+            { token: token },
+            {status: 200}
         )
 
     } catch (error: any) {
