@@ -1,9 +1,5 @@
 import { UserRegistrationData, UserLoginData } from "@/types/user"
 
-//bryt ut
-type ErrorObject = {
-    [key: string]: string;
-  };
 
 export function registrationValidation(data: UserRegistrationData): [boolean, ErrorObject] {
     let errors: ErrorObject = {}

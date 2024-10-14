@@ -44,9 +44,16 @@ createdAt       DateTime   @default(now())
 checkin_date    DateTime
 checkout_date   DateTime
 total_cost      Float
+status          Status     @default(pending)
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+enum Status {
+  pending 
+  accepted 
+  rejected
 }
