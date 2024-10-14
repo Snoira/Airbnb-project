@@ -2,7 +2,8 @@ import { PrismaClient, User } from "@prisma/client"
 import { UserRegistrationData } from "@/types/user"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcrypt"
-import {signJWT} from "@/utils/JWT"
+import { signJWT } from "@/utils/jwt"
+import { registrationValidation } from "@/utils/validators/userValidator"
 
 const prisma = new PrismaClient()
 
@@ -11,21 +12,10 @@ export async function POST(request: NextRequest) {
         const body: UserRegistrationData = await request.json()
         console.log("BODY", body)
 
-        if (!body.email) {
+        const [hasErrors, errors] = registrationValidation(body)
+        if (hasErrors) {
             return NextResponse.json(
-                { error: "Email is required" },
-                { status: 400 }
-            )
-        }
-        if (!body.name) {
-            return NextResponse.json(
-                { error: "Name is required" },
-                { status: 400 }
-            )
-        }
-        if (!body.password) {
-            return NextResponse.json(
-                { error: "Password is required" },
+                { error: errors },
                 { status: 400 }
             )
         }
@@ -42,6 +32,7 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+
         const password: string = await bcrypt.hash(body.password, 10);
         console.log("PASSWORD", password)
 
@@ -54,7 +45,7 @@ export async function POST(request: NextRequest) {
         }
         )
 
-        const token = await signJWT({userId: newUser.id})
+        const token: string = await signJWT({ userId: newUser.id }) //onödigt att ha :string eftersom signJWT Promise<string>?
 
         return NextResponse.json(
             { token },
@@ -63,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         return NextResponse.json(
-            { error: error },
+            { error },
             { status: 400 }
         )
     }
