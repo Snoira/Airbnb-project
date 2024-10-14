@@ -2,6 +2,7 @@ import { PrismaClient, User } from "@prisma/client"
 import { UserRegistrationData } from "@/types/user"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcrypt"
+import {signJWT} from "@/utils/JWT"
 
 const prisma = new PrismaClient()
 
@@ -52,8 +53,11 @@ export async function POST(request: NextRequest) {
             }
         }
         )
+
+        const token = await signJWT({userId: newUser.id})
+
         return NextResponse.json(
-            { newUser },
+            { token },
             { status: 201 }
         )
 
