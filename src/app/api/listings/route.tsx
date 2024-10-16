@@ -21,13 +21,12 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
-        //har använts i login också, bör brytas ut
+        //har använts i login också, bör brytas ut. redundant pga görs i middleware?
         const user = await prisma.user.findUniqueOrThrow({
             where: {
                 id: userId
             }
         })
-        console.log("USER", user)
 
         const newListing: Listing = await prisma.listing.create({
             data: {
@@ -54,4 +53,36 @@ export async function POST(request: NextRequest) {
             { status: 400 }
         )
     }
+}
+
+export async function GET(request: NextRequest) {
+    try {
+        //search query filter 
+        //vill kunna söka på namn, location
+        //filtrera price per night och availability?
+        const queryNames: string[] = ["q",]
+        const searchParams = new URL(request.url).searchParams
+        const [q] = queryNames.map(query => searchParams.get(query))
+
+        let listings: Listing[] = []
+        if (q) {
+            listings = await prisma.listing.findMany({
+                where: {
+                    name: {
+                        contains: q,
+                        mode: "insensitive"
+                    }
+                }
+            })
+        } else {
+            listings = await prisma.listing.findMany();
+        }
+
+        return NextResponse.json(listings);
+
+    } catch (error: any) {
+        console.error("Error fetching books:", error)
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 })
+    }
+
 }

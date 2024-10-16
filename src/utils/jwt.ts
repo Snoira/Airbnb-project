@@ -30,12 +30,13 @@ export async function signJWT(payload: JWTUserPayload): Promise<string> {
 export async function verifyJWT(token: string): Promise<JWTUserPayload | null> {
     try {
         const { payload } = await Jose.jwtVerify(token, encodedSecret)
-
+        
         //lägg till validering av payload så att den innehåller de nödvändiga fälten?
 
         return payload as JWTUserPayload
 
     } catch (error) {
+        //implementera redirect?
         if (error instanceof Jose.errors.JWTExpired) {
             console.error('JWT has expired:', error)
         } else if (error instanceof Jose.errors.JWTInvalid) {
