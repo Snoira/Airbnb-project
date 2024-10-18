@@ -1,3 +1,14 @@
+Generella punkter och frågor jag vill fördjupa mig i/få bättre förståelse för:
+- Errorhanteriing. För-, nackdelar, skillnad throw error vs. NextResponse.json{error:}, redirect etc.
+- total_cost som existerande fält i modellen eller göra en "extend"? för-, nackdelar?
+
+GLÖM INTE: 
+- konsekvent kod, t.ex. error hantering.
+
+
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
