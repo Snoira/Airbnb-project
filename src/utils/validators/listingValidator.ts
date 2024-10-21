@@ -1,14 +1,20 @@
 import { ListingRegisterData } from "@/types/listing"
 
-export function registrationValidation(data: ListingRegisterData): [boolean, ErrorObject] {
-    let errors: ErrorObject = {}
-    if (!data.name) errors.name = "Name is required"
-    if (!data.description) errors.description = "Description is required"
-    if (!data.location) errors.location = "Location is required"
-    if (!data.pricePerNight) errors.pricePerNight = "Price per night is required"
-    if (!data.availability) errors.availability = "Availability is required"
+export function listingValidation(data: ListingRegisterData): [boolean, string] {
+    // let errors: ErrorObject = {}
+    let errors: string[]= []
+    if (!data.name) errors.push("Name")
+    if (!data.description) errors.push("Description")
+    if (!data.location) errors.push("Location")
+    if (!data.pricePerNight) errors.push("Price per night")
+    if (!data.availability) errors.push("Availability")
 
-    const hasErrors = Object.keys(errors).length !== 0
+    const hasErrors = errors.length !== 0
+    const errorText: string = (errors.join(", ")+" is required")
+    //skicka ErrorObject eller errorText beror på hur jag vill hantera error i frontend tror jag
+    // inte kommit dit än men om error ska dyka upp i formulär kanske objektet är viktigt? får se
+    // till dess text.
     
-    return [hasErrors, errors]
+    return [hasErrors, errorText]
+    //return [hasErrors, errors]
 }

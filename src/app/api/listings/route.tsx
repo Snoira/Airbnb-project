@@ -1,32 +1,28 @@
 import { PrismaClient, Listing } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
 import { ListingRegisterData } from "@/types/listing"
-import { registrationValidation } from "@/utils/validators/listingValidator"
+import { listingValidation } from "@/utils/validators/listingValidator"
+import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors"
 
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
     try {
         const body: ListingRegisterData = await request.json()
-
+        
         const userId = request.headers.get("userId")
-        if (!userId) {
-            throw new Error("Failed to retrieve userId from headers")
-        }
+        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
-        const [hasErrors, errors] = registrationValidation(body)
-        if (hasErrors) {
-            return NextResponse.json(
-                { errors },
-                { status: 400 }
-            )
-        }
+        const [hasErrors, errorText] = listingValidation(body)//byta namn på funktion?
+        if (hasErrors) throw new ValidationError(errorText)
+
         //har använts i login också, bör brytas ut. redundant pga görs i middleware?
-        const user = await prisma.user.findUniqueOrThrow({
+        const user = await prisma.user.findUnique({
             where: {
                 id: userId
             }
         })
+        if (!user) throw new NotFoundError("User not found")
 
         const newListing: Listing = await prisma.listing.create({
             data: {
@@ -39,7 +35,7 @@ export async function POST(request: NextRequest) {
             }
         }
         )
-        console.log("NEW", newListing)
+        if (!newListing) throw new DatabaseError("Failed to create Listing") //onödig?
 
         return NextResponse.json(
             { newListing },
@@ -48,11 +44,19 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         //borde inte detta va 500 om errorhantering är tillräcklig i alla andra delar?
-        return NextResponse.json(
-            { error: "insufficient data, couldn't create new listing" },
-            { status: 400 }
-        )
+        if (error instanceof ValidationError ||
+            error instanceof NotFoundError || //redirect till logga in eller registrera?
+            error instanceof DatabaseError)
+            return NextResponse.json(
+                { message: error.message },
+                { status: error.statusCode }
+            )
     }
+
+    return NextResponse.json(
+        { message: "Internal Server Error" },
+        { status: 500 }
+    )
 }
 
 export async function GET(request: NextRequest) {
@@ -75,14 +79,24 @@ export async function GET(request: NextRequest) {
                 }
             })
         } else {
-            listings = await prisma.listing.findMany();
+            listings = await prisma.listing.findMany()
         }
+        if (listings.length === 0) throw new NotFoundError("No listings found")
 
-        return NextResponse.json(listings);
+        return NextResponse.json(listings)
 
     } catch (error: any) {
-        console.error("Error fetching books:", error)
-        return NextResponse.json({ error: "An error occurred" }, { status: 500 })
+        if (error instanceof NotFoundError) {
+            return NextResponse.json(
+                { message: error.message },
+                { status: error.statusCode }
+            )
+        }
+
+        return NextResponse.json(
+            { error: "An error occurred" },
+            { status: 500 }
+        )
     }
 
 }
