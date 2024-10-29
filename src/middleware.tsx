@@ -47,6 +47,8 @@ export async function middleware(request: NextRequest) {
       )
     }
   }
+  console.log("Safe");
+  return NextResponse.next();
 }
 
 export const config = {

@@ -111,6 +111,8 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
             if (!isAdmin) throw new ForbiddenError("You do not have permission to update this listing")
         }
 
+    // implementera manuell cascade där alla ookings kopplade till listingen tas bort innan listing tas bort.
+
         await prisma.listing.delete({
             where: {
                 id

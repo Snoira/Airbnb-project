@@ -28,9 +28,9 @@ model Listing {
   description   String
   location      String
   pricePerNight Float
-  availability  DateTime[]
+  availability  Dates[]
   bookings      Booking[]
-  createdAt     DateTime   @default(now())
+  createdAt     DateTime   @default(now())  
   updatedAt     DateTime   @updatedAt
 }
 
@@ -41,8 +41,7 @@ listing         Listing    @relation(fields: [listingId], references: [id])
 renterId        String
 renter          User       @relation(fields: [renterId], references: [id])
 createdAt       DateTime   @default(now())
-checkin_date    DateTime
-checkout_date   DateTime
+booked_dates    DateTime[]
 total_cost      Float
 status          Status     @default(pending)
 }

@@ -61,29 +61,40 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        //search query filter 
-        //vill kunna söka på namn, location
-        //filtrera price per night och availability?
-        const queryNames: string[] = ["q",]
+        
+        const queryNames: string[] = ["name", "loc"]
         const searchParams = new URL(request.url).searchParams
-        const [q] = queryNames.map(query => searchParams.get(query))
+        const [name, loc] = queryNames.map( query => searchParams.get(query))
 
-        let listings: Listing[] = []
-        if (q) {
-            listings = await prisma.listing.findMany({
-                where: {
-                    name: {
-                        contains: q,
-                        mode: "insensitive"
-                    }
-                }
-            })
-        } else {
-            listings = await prisma.listing.findMany()
+        let where: {[key: string]: any} ={}
+
+        if(name){
+            where.name = {
+                contains: name,
+                mode: "insensitive"
+            }
         }
+
+        if(loc){
+            where.location = {
+                contains: loc,
+                mode: "insensitive"
+            }
+        }
+
+        // lägg till dates. måste bestämma sparande av datum först.
+        // price per night och available dates
+
+        const listings = await prisma.listing.findMany({
+            where
+        })
+
         if (listings.length === 0) throw new NotFoundError("No listings found")
 
-        return NextResponse.json(listings)
+        return NextResponse.json(
+            {listings},
+            {status: 200}
+        )
 
     } catch (error: any) {
         if (error instanceof NotFoundError) {
