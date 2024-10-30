@@ -37,7 +37,7 @@ export async function checkAdmin(userId:string, client:PrismaClient): Promise<bo
 }
 }
 
-export async function checkListing(listingId:string, client: PrismaClient): Promise<[boolean, Listing | null]>{
+export async function getListing(listingId:string, client: PrismaClient): Promise< Listing | null>{
     try{
         //återkommer för att testa alternativa lösningar, oklar typing..
         const listing = await client.listing.findUnique({
@@ -45,10 +45,9 @@ export async function checkListing(listingId:string, client: PrismaClient): Prom
                 id: listingId
             }
         })
-        const listingExists = !!listing
-        return [listingExists, listing ? listing : null]
+        return listing
 
     }catch(error){
-        throw new Error("something went wrong when checking listing")
+        throw new Error("something went wrong when getting listing")
     }
 }
