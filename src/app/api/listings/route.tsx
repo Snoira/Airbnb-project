@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         
-        const queryNames: string[] = ["name", "loc"]
+        const queryNames: string[] = ["name", "loc", "price"]
         const searchParams = new URL(request.url).searchParams
-        const [name, loc] = queryNames.map( query => searchParams.get(query))
+        const [name, loc, price] = queryNames.map( query => searchParams.get(query))
 
         let where: {[key: string]: any} ={}
 
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // lägg price per night använder equals eller gte (greaterThan) och lte(lesserThan) för intervall match
         // lägg till dates. måste bestämma sparande av datum först.
-        // price per night och available dates
 
         const listings = await prisma.listing.findMany({
             where

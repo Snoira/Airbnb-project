@@ -41,7 +41,7 @@ listing         Listing    @relation(fields: [listingId], references: [id])
 renterId        String
 renter          User       @relation(fields: [renterId], references: [id])
 createdAt       DateTime   @default(now())
-booked_dates    DateTime[]
+booked_dates    DateTime[] 
 total_cost      Float
 status          Status     @default(pending)
 }
