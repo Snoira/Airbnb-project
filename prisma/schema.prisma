@@ -14,7 +14,8 @@ model User {
   name          String
   password      String
   role          Role       @default(USER)
-  bookings      Booking[]
+  bookings      Booking[]  @relation("BookingAsRenter")
+  listingAgent  Booking[]  @relation("BookingsAsAgent")
   listings      Listing[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -38,9 +39,13 @@ model Booking {
 id              String     @id @default(auto()) @map("_id") @db.ObjectId
 listingId       String
 listing         Listing    @relation(fields: [listingId], references: [id])
+listingAgentId  String
+listingAgent    User       @relation("BookingsAsAgent", fields: [listingAgentId], references: [id])
 renterId        String
-renter          User       @relation(fields: [renterId], references: [id])
+renter          User       @relation("BookingAsRenter", fields: [renterId], references: [id])
 createdAt       DateTime   @default(now())
+checkin_date    DateTime
+checkout_date   DateTime
 booked_dates    DateTime[] 
 total_cost      Float
 status          Status     @default(pending)

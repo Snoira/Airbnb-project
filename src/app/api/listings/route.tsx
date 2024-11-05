@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 export async function POST(request: NextRequest) {
     try {
         const body: ListingRegisterData = await request.json()
-        
+
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
@@ -64,18 +64,18 @@ export async function GET(request: NextRequest) {
         
         const queryNames: string[] = ["name", "loc", "price"]
         const searchParams = new URL(request.url).searchParams
-        const [name, loc, price] = queryNames.map( query => searchParams.get(query))
+        const [name, loc, price] = queryNames.map(query => searchParams.get(query))
 
-        let where: {[key: string]: any} ={}
+        let where: { [key: string]: any } = {}
 
-        if(name){
+        if (name) {
             where.name = {
                 contains: name,
                 mode: "insensitive"
             }
         }
 
-        if(loc){
+        if (loc) {
             where.location = {
                 contains: loc,
                 mode: "insensitive"
@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
         if (listings.length === 0) throw new NotFoundError("No listings found")
 
         return NextResponse.json(
-            {listings},
-            {status: 200}
+            { listings },
+            { status: 200 }
         )
 
     } catch (error: any) {

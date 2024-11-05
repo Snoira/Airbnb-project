@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcrypt"
 import { signJWT } from "@/utils/jwt"
 import { registrationValidation } from "@/utils/validators/userValidator"
+import {getUserByEmail} from "@/utils/prisma"
 
 const prisma = new PrismaClient()
 
@@ -21,11 +22,8 @@ export async function POST(request: NextRequest) {
         }
         console.log("bodu validated")
 
-        const isRegistered = await prisma.user.findUnique({
-            where: {
-                email: body.email
-            }
-        })
+        const isRegistered = await getUserByEmail(prisma, body.email.toLowerCase())
+
         if (isRegistered) {
             return NextResponse.json(
                 { error: "User already exists" }, //skriva annat för bättre säkerhet?

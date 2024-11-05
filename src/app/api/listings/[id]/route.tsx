@@ -3,9 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { ListingRegisterData } from "@/types/listing";
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors"
-import { checkListingAndPermission, checkAdmin, getListing } from "@/utils/prisma"
-import { bookingData } from "@/types/booking"
-import { differenceInCalendarDays, eachDayOfInterval, isSameDay, add } from "date-fns"
+import { checkListingAndPermission, checkAdmin, getListing, deleteBookingsById } from "@/utils/prisma"
 
 const prisma = new PrismaClient
 
@@ -104,15 +102,28 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
         //använda check listing istället?
-        const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
-        if (!objExists) throw new NotFoundError("Listing not found")
-        if (!hasPermission) {
+        const listing = await prisma.listing.findUnique({
+            where: {
+                id
+            },
+            include: {
+                bookings : true
+            }
+        })
+        if (!listing) throw new NotFoundError("Listing not found")
+        if (listing.createdById !== userId) {
             //finns kanske bättre sätt att lösa? middleware typ?
             const isAdmin = await checkAdmin(userId, prisma)
-            if (!isAdmin) throw new ForbiddenError("You do not have permission to update this listing")
+            if (!isAdmin) throw new ForbiddenError("You do not have permission to delete this listing")
         }
 
-        // implementera manuell cascade där alla ookings kopplade till listingen tas bort innan listing tas bort.
+        if(listing.bookings.length > 0){
+            const promises = listing.bookings.map((booking) => {
+                return deleteBookingsById(booking.id, prisma)
+            })
+            await Promise.all(promises)
+            
+        }
 
         await prisma.listing.delete({
             where: {
@@ -124,7 +135,8 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
     } catch (error: any) {
         if (error instanceof ValidationError ||
             error instanceof NotFoundError ||
-            error instanceof ForbiddenError
+            error instanceof ForbiddenError ||
+            error instanceof DatabaseError
         ) {
             return NextResponse.json(
                 { message: error.message },
@@ -138,81 +150,81 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
     }
 }
 //annan fil? api/listings/:id/book eller liknande?
-export async function POST(request: NextRequest, options: APIOptions) {
-    try {
-        //Bryta ut validerings errors? 
-        const id = options.params.id
-        if (!id) throw new ValidationError("Failed to retrive id")
+// export async function POST(request: NextRequest, options: APIOptions) {
+//     try {
+//         //Bryta ut validerings errors? 
+//         const id = options.params.id
+//         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
+//         const userId = request.headers.get("userId")
+//         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
-        //ÅTERKOM TILL DETTA VID TID 
-        // const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
-        // if (!objExists) throw new NotFoundError("Listing not found")
-        // //byta namn på hasPermission till isMatch eller liknande?
-        // if (hasPermission) throw new Error("Can't book your own listing")
-        const listing = await getListing(id, prisma) //skicka in objekt som specificerar fält?
-        if (!listing) throw new NotFoundError("Listing not found")
-        if (listing.createdById === userId) throw new ValidationError("Can't book your own listing")
+//         //ÅTERKOM TILL DETTA VID TID 
+//         // const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
+//         // if (!objExists) throw new NotFoundError("Listing not found")
+//         // //byta namn på hasPermission till isMatch eller liknande?
+//         // if (hasPermission) throw new Error("Can't book your own listing")
+//         const listing = await getListing(id, prisma) //skicka in objekt som specificerar fält?
+//         if (!listing) throw new NotFoundError("Listing not found")
+//         if (listing.createdById === userId) throw new ValidationError("Can't book your own listing")
 
-        //Bryta ut bookingValidation
-        const body: bookingData = await request.json()
-        const {checkin_date, checkout_date} = body
-        if (!checkin_date) throw new ValidationError("Check in date is required")
-        if (!checkout_date) throw new ValidationError("Check out date is required")
+//         //Bryta ut bookingValidation
+//         const body: bookingData = await request.json()
+//         const {checkin_date, checkout_date} = body
+//         if (!checkin_date) throw new ValidationError("Check in date is required")
+//         if (!checkout_date) throw new ValidationError("Check out date is required")
 
-        const numberOfDays:number = differenceInCalendarDays(checkout_date, checkin_date)
-        console.log("NUMBER OF DAYS", numberOfDays)
+//         const numberOfDays:number = differenceInCalendarDays(checkout_date, checkin_date)
+//         console.log("NUMBER OF DAYS", numberOfDays)
 
-        const requestedDates: Date[] = []
+//         const requestedDates: Date[] = []
 
-        for(let i = 0; i<= numberOfDays; i++ ){
-            requestedDates.push(
-                add(new Date(checkin_date), {days: i})
-            )
-        }
-        if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
+//         for(let i = 0; i<= numberOfDays; i++ ){
+//             requestedDates.push(
+//                 add(new Date(checkin_date), {days: i})
+//             )
+//         }
+//         if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
 
-        const isAvailable = requestedDates.every((requestedDate) => {
-            return listing.availability.some((availableDate) => {
-                return isSameDay(new Date(requestedDate), new Date(availableDate))
-            })
-        })
-        if (!isAvailable) throw new ValidationError("Listing is not available during the requested dates")
+//         const isAvailable = requestedDates.every((requestedDate) => {
+//             return listing.availability.some((availableDate) => {
+//                 return isSameDay(new Date(requestedDate), new Date(availableDate))
+//             })
+//         })
+//         if (!isAvailable) throw new ValidationError("Listing is not available during the requested dates")
 
-        const totalCost: number = numberOfDays * listing.pricePerNight
-        if (!totalCost) throw new ValidationError("Couldn't calculate total cost")
+//         const totalCost: number = numberOfDays * listing.pricePerNight
+//         if (!totalCost) throw new ValidationError("Couldn't calculate total cost")
 
-        const newBooking = await prisma.booking.create({
-            data: {
-                listingId: id,
-                renterId: userId,
-                checkin_date: new Date(checkin_date),
-                checkout_date: new Date(checkout_date),
-                total_cost: totalCost
-            }
-        })
+//         const newBooking = await prisma.booking.create({
+//             data: {
+//                 listingId: id,
+//                 renterId: userId,
+//                 checkin_date: new Date(checkin_date),
+//                 checkout_date: new Date(checkout_date),
+//                 total_cost: totalCost
+//             }
+//         })
 
-        return NextResponse.json(
-            { newBooking },
-            { status: 201 }
-        )
+//         return NextResponse.json(
+//             { newBooking },
+//             { status: 201 }
+//         )
 
-    } catch (error: any) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof DatabaseError ||
-            error instanceof ForbiddenError) {
-            return NextResponse.json(
-                { message: error.message },
-                { status: error.statusCode }
-            )
-        }
+//     } catch (error: any) {
+//         if (error instanceof ValidationError ||
+//             error instanceof NotFoundError ||
+//             error instanceof DatabaseError ||
+//             error instanceof ForbiddenError) {
+//             return NextResponse.json(
+//                 { message: error.message },
+//                 { status: error.statusCode }
+//             )
+//         }
 
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 }
-        )
-    }
-}
+//         return NextResponse.json(
+//             { message: "Internal Server Error" },
+//             { status: 500 }
+//         )
+//     }
+// }
