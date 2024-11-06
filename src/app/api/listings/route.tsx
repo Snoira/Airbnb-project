@@ -1,28 +1,23 @@
 import { PrismaClient, Listing } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
-import { ListingRegisterData } from "@/types/listing"
+import { ListingData } from "@/types/listing"
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors"
+import { verifyUserById } from "@/utils/prisma"
 
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
     try {
-        const body: ListingRegisterData = await request.json()
+        const body: ListingData = await request.json()
 
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
+        //redundant pga görs i middleware?
+        await verifyUserById(userId, prisma)
 
         const [hasErrors, errorText] = listingValidation(body)//byta namn på funktion?
         if (hasErrors) throw new ValidationError(errorText)
-
-        //har använts i login också, bör brytas ut. redundant pga görs i middleware?
-        const user = await prisma.user.findUnique({
-            where: {
-                id: userId
-            }
-        })
-        if (!user) throw new NotFoundError("User not found")
 
         const newListing: Listing = await prisma.listing.create({
             data: {
@@ -31,14 +26,14 @@ export async function POST(request: NextRequest) {
                 description: body.description,
                 location: body.location,
                 pricePerNight: body.pricePerNight,
-                availability: body.availability
+                reservedDates: body.reservedDates
             }
         }
         )
         if (!newListing) throw new DatabaseError("Failed to create Listing") //onödig?
 
         return NextResponse.json(
-            { newListing },
+            newListing,
             { status: 201 }
         )
 
@@ -61,7 +56,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        
+
         const queryNames: string[] = ["name", "loc", "price"]
         const searchParams = new URL(request.url).searchParams
         const [name, loc, price] = queryNames.map(query => searchParams.get(query))
@@ -92,7 +87,7 @@ export async function GET(request: NextRequest) {
         if (listings.length === 0) throw new NotFoundError("No listings found")
 
         return NextResponse.json(
-            { listings },
+            listings,
             { status: 200 }
         )
 

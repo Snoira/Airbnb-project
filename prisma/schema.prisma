@@ -22,17 +22,17 @@ model User {
 }
 
 model Listing {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  createdById   String
-  createdBy     User       @relation(fields: [createdById], references: [id])
-  name          String
-  description   String
-  location      String
-  pricePerNight Float
-  availability  DateTime[]
-  bookings      Booking[]
-  createdAt     DateTime   @default(now())  
-  updatedAt     DateTime   @updatedAt
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  createdById    String
+  createdBy      User       @relation(fields: [createdById], references: [id])
+  name           String
+  description    String
+  location       String
+  pricePerNight  Float
+  reservedDates  DateTime[]
+  bookings       Booking[]
+  createdAt      DateTime   @default(now())  
+  updatedAt      DateTime   @updatedAt
 }
 
 model Booking {
@@ -46,7 +46,6 @@ renter          User       @relation("BookingAsRenter", fields: [renterId], refe
 createdAt       DateTime   @default(now())
 checkin_date    DateTime
 checkout_date   DateTime
-booked_dates    DateTime[] 
 total_cost      Float
 status          Status     @default(pending)
 }
@@ -57,7 +56,9 @@ enum Role {
 }
 
 enum Status {
-  pending 
-  accepted 
-  rejected
+  pending
+  accepted
+  denied
 }
+ 
+ 

@@ -1,4 +1,4 @@
-import { PrismaClient, User, Listing } from "@prisma/client";
+import { PrismaClient, User, Listing, Booking } from "@prisma/client";
 import { DatabaseError, NotFoundError } from "@/utils/errors"
 
 export async function getUserByEmail(client: PrismaClient, email: string): Promise<User | null> {
@@ -14,7 +14,7 @@ export async function getUserByEmail(client: PrismaClient, email: string): Promi
     }
 }
 
-export async function verifyUserId(client: PrismaClient, userId: string): Promise<User | null> {
+export async function getUserById(client: PrismaClient, userId: string): Promise<User | null> {
     try {
         const user = await client.user.findUnique({
             where: {
@@ -29,7 +29,7 @@ export async function verifyUserId(client: PrismaClient, userId: string): Promis
     }
 }
 
-export async function verifyUserById(id: string, client: PrismaClient): Promise<boolean> {
+export async function verifyUserById(id: string, client: PrismaClient): Promise<undefined> {
     try {
         const user = await client.user.findUnique({
             where: {
@@ -37,7 +37,8 @@ export async function verifyUserById(id: string, client: PrismaClient): Promise<
             }
         })
 
-        return !!user
+        if (!user) throw new NotFoundError("User not found")
+
     } catch (error) {
         throw new DatabaseError("Could not verify user by id")
     }
@@ -93,7 +94,21 @@ export async function getListing(listingId: string, client: PrismaClient): Promi
     }
 }
 
-export async function deleteBookingsById(bookingId: string, client: PrismaClient) {
+export async function getBookingById(bookingId: string, client: PrismaClient): Promise<Booking | null> {
+    try {
+        const booking = await client.booking.findUnique({
+            where: {
+                id: bookingId
+            }
+        })
+        return booking
+
+    } catch (error) {
+        throw new DatabaseError(`Could not get booking`)
+    }
+}
+
+export async function deleteBookingById(bookingId: string, client: PrismaClient): Promise<undefined> {
     try {
         await client.booking.delete({
             where: {

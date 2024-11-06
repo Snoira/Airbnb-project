@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors";
 import { bookingData } from "@/types/booking"
-import { getListing } from "@/utils/prisma";
+import { getListing, verifyUserById } from "@/utils/prisma";
 import { differenceInCalendarDays, add, isSameDay } from "date-fns";
 
 const prisma = new PrismaClient()
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest, options: APIOptions) {
 
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
+        await verifyUserById(userId, prisma)
 
         //ÅTERKOM TILL DETTA VID TID 
         // const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
@@ -72,25 +73,27 @@ export async function POST(request: NextRequest, options: APIOptions) {
         if (!checkin_date) throw new ValidationError("Check in date is required")
         if (!checkout_date) throw new ValidationError("Check out date is required")
 
-        const numberOfDays: number = differenceInCalendarDays(checkout_date, checkin_date)
-        console.log("NUMBER OF DAYS", numberOfDays)
+        // const requestedDates: Date[] = []
 
-        const requestedDates: Date[] = []
+        // for (let i = 0; i <= numberOfDays; i++) {
+        //     requestedDates.push(
+        //         add(new Date(checkin_date), { days: i })
+        //     )
+        // }
+        // if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
 
-        for (let i = 0; i <= numberOfDays; i++) {
-            requestedDates.push(
-                add(new Date(checkin_date), { days: i })
-            )
-        }
-        if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
-
-        const isAvailable = requestedDates.every((requestedDate) => {
-            return listing.availability.some((availableDate) => {
-                return isSameDay(new Date(requestedDate), new Date(availableDate))
-            })
+        // const isAvailable = requestedDates.every((requestedDate) => {
+        //     return listing.availability.some((availableDate) => {
+        //         return isSameDay(new Date(requestedDate), new Date(availableDate))
+        //     })
+        // })
+        const isAvailable = listing.reservedDates?.every((date: Date) => {
+            return (date < checkin_date && date > checkout_date)
         })
+
         if (!isAvailable) throw new ValidationError("Listing is not available during the requested dates")
 
+        const numberOfDays: number = differenceInCalendarDays(checkout_date, checkin_date)
         const totalCost: number = numberOfDays * listing.pricePerNight
         if (!totalCost) throw new ValidationError("Couldn't calculate total cost")
 

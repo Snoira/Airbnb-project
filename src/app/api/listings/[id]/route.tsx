@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { ListingRegisterData } from "@/types/listing";
+import { ListingData } from "@/types/listing";
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors"
-import { checkListingAndPermission, checkAdmin, getListing, deleteBookingsById } from "@/utils/prisma"
+import { checkListingAndPermission, checkAdmin, getListing, deleteBookingById, verifyUserById } from "@/utils/prisma"
 
 const prisma = new PrismaClient
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
         if (!listing) throw new NotFoundError("Couldn't find listing")
 
         return NextResponse.json(
-            { listing },
+            listing,
             { status: 200 }
         )
     }
@@ -46,8 +46,9 @@ export async function PUT(request: NextRequest, options: APIOptions) {
         const userId = request.headers.get("userId")
         //klassas detta verkligen som validation? snarar unauth?
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
-
-        const body: ListingRegisterData = await request.json()
+        await verifyUserById(userId, prisma)
+        
+        const body: ListingData = await request.json()
         const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
 
@@ -65,13 +66,13 @@ export async function PUT(request: NextRequest, options: APIOptions) {
                 description: body.description,
                 location: body.location,
                 pricePerNight: body.pricePerNight,
-                availability: body.availability
+                reservedDates: body.reservedDates
             }
         })
         if (!updatedListing) throw new DatabaseError("Failed to update listing")
 
         return NextResponse.json(
-            { updatedListing },
+            updatedListing,
             { status: 200 }
         )
 
@@ -100,6 +101,7 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
 
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
+        await verifyUserById(userId, prisma)
 
         //använda check listing istället?
         const listing = await prisma.listing.findUnique({
@@ -119,7 +121,7 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
 
         if(listing.bookings.length > 0){
             const promises = listing.bookings.map((booking) => {
-                return deleteBookingsById(booking.id, prisma)
+                return deleteBookingById(booking.id, prisma)
             })
             await Promise.all(promises)
             
