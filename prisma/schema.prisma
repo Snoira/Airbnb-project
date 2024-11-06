@@ -14,34 +14,38 @@ model User {
   name          String
   password      String
   role          Role       @default(USER)
-  bookings      Booking[]
+  bookings      Booking[]  @relation("BookingAsRenter")
+  listingAgent  Booking[]  @relation("BookingsAsAgent")
   listings      Listing[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
 
 model Listing {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  createdById   String
-  createdBy     User       @relation(fields: [createdById], references: [id])
-  name          String
-  description   String
-  location      String
-  pricePerNight Float
-  availability  Dates[]
-  bookings      Booking[]
-  createdAt     DateTime   @default(now())  
-  updatedAt     DateTime   @updatedAt
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  createdById    String
+  createdBy      User       @relation(fields: [createdById], references: [id])
+  name           String
+  description    String
+  location       String
+  pricePerNight  Float
+  reservedDates  DateTime[]
+  bookings       Booking[]
+  createdAt      DateTime   @default(now())  
+  updatedAt      DateTime   @updatedAt
 }
 
 model Booking {
 id              String     @id @default(auto()) @map("_id") @db.ObjectId
 listingId       String
 listing         Listing    @relation(fields: [listingId], references: [id])
+listingAgentId  String
+listingAgent    User       @relation("BookingsAsAgent", fields: [listingAgentId], references: [id])
 renterId        String
-renter          User       @relation(fields: [renterId], references: [id])
+renter          User       @relation("BookingAsRenter", fields: [renterId], references: [id])
 createdAt       DateTime   @default(now())
-booked_dates    DateTime[]
+checkin_date    DateTime
+checkout_date   DateTime
 total_cost      Float
 status          Status     @default(pending)
 }
@@ -52,7 +56,9 @@ enum Role {
 }
 
 enum Status {
-  pending 
-  accepted 
-  rejected
+  pending
+  accepted
+  denied
 }
+ 
+ 

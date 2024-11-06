@@ -1,13 +1,13 @@
-import { ListingRegisterData } from "@/types/listing"
+import { ListingData } from "@/types/listing"
 
-export function listingValidation(data: ListingRegisterData): [boolean, string] {
+export function listingValidation(data: ListingData): [boolean, string] {
     // let errors: ErrorObject = {}
     let errors: string[]= []
     if (!data.name) errors.push("Name")
     if (!data.description) errors.push("Description")
     if (!data.location) errors.push("Location")
     if (!data.pricePerNight) errors.push("Price per night")
-    if (!data.availability) errors.push("Availability")
+    if (!data.reservedDates) errors.push("Reserved Dates")
 
     const hasErrors = errors.length !== 0
     const errorText: string = (errors.join(", ")+" is required")

@@ -4,6 +4,8 @@ import { UserLoginData } from "@/types/user"
 import { loginValidation } from "@/utils/validators/userValidator"
 import bcrypt from "bcrypt"
 import { signJWT } from "@/utils/jwt"
+import {getUserByEmail} from "@/utils/prisma"
+import { NotFoundError } from "@/utils/errors"
 
 const prisma = new PrismaClient()
 
@@ -20,11 +22,8 @@ export async function POST(request: NextRequest) {
         }
         console.log("validated")
 
-        const user = await prisma.user.findUniqueOrThrow({
-            where: {
-                email: body.email.toLowerCase()
-            }
-        })
+        const user = await getUserByEmail(prisma, body.email.toLowerCase())
+        if(!user) throw new NotFoundError("User not found")
         console.log("USER", user)
 
         const isPasswordMatch: boolean = await bcrypt.compare(body.password, user.password)
