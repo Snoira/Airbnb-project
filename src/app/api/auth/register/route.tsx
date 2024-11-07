@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         }
         console.log("bodu validated")
 
-        const isRegistered = await getUserByEmail(prisma, body.email.toLowerCase())
+        const isRegistered = await getUserByEmail(body.email.toLowerCase(), prisma)
 
         if (isRegistered) {
             return NextResponse.json(

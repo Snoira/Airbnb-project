@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         }
         console.log("validated")
 
-        const user = await getUserByEmail(prisma, body.email.toLowerCase())
+        const user = await getUserByEmail(body.email.toLowerCase(), prisma)
         if(!user) throw new NotFoundError("User not found")
         console.log("USER", user)
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { ListingData } from "@/types/listing";
+import { ListingData, ListingWithBookings } from "@/types/listing";
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors"
-import { checkListingAndPermission, checkAdmin, getListing, deleteBookingById, verifyUserById } from "@/utils/prisma"
+import { checkAdmin, deleteBookingById, getListingById } from "@/utils/prisma"
+import { getVerifiedUserId } from "@/utils/validators/userValidator"
+import Listing from "@/app/listings/[id]/page";
 
 const prisma = new PrismaClient
 
@@ -12,12 +14,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
     if (!id) throw new ValidationError("Failed to retrive id")
 
     try {
-        const listing = await prisma.listing.findUnique({
-            where: {
-                id
-            }
-        })
-        if (!listing) throw new NotFoundError("Couldn't find listing")
+        const listing = await getListingById(id, prisma)
 
         return NextResponse.json(
             listing,
@@ -26,7 +23,8 @@ export async function GET(request: NextRequest, options: APIOptions) {
     }
     catch (error: any) {
         if (error instanceof ValidationError ||
-            error instanceof NotFoundError)
+            error instanceof NotFoundError ||
+            error instanceof DatabaseError)
             return NextResponse.json(
                 { message: error.message },
                 { status: error.statusCode }
@@ -39,23 +37,19 @@ export async function GET(request: NextRequest, options: APIOptions) {
 }
 
 export async function PUT(request: NextRequest, options: APIOptions) {
-    const id = options.params.id
-    if (!id) throw new ValidationError("Failed to retrive id")
-
     try {
-        const userId = request.headers.get("userId")
-        //klassas detta verkligen som validation? snarar unauth?
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
-        await verifyUserById(userId, prisma)
-        
+        const id = options.params.id
+        if (!id) throw new ValidationError("Failed to retrive id")
+
+        const userId = await getVerifiedUserId(request, prisma)
+
         const body: ListingData = await request.json()
         const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
 
         //använda checkListing istället?
-        const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
-        if (!objExists) throw new NotFoundError("Listing not found")
-        if (!hasPermission) throw new ForbiddenError("You do not have permission to update this listing")
+        const listing = await getListingById(id, prisma)
+        if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
 
         const updatedListing = await prisma.listing.update({
             where: {
@@ -69,7 +63,6 @@ export async function PUT(request: NextRequest, options: APIOptions) {
                 reservedDates: body.reservedDates
             }
         })
-        if (!updatedListing) throw new DatabaseError("Failed to update listing")
 
         return NextResponse.json(
             updatedListing,
@@ -99,40 +92,33 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
-        await verifyUserById(userId, prisma)
+        const userId = await getVerifiedUserId(request, prisma)
+        console.clear()
 
-        //använda check listing istället?
-        const listing = await prisma.listing.findUnique({
-            where: {
-                id
-            },
-            include: {
-                bookings : true
-            }
-        })
-        if (!listing) throw new NotFoundError("Listing not found")
+        const includeField = "bookings"
+        const listing = await getListingById(id, prisma, includeField)
+
         if (listing.createdById !== userId) {
             //finns kanske bättre sätt att lösa? middleware typ?
             const isAdmin = await checkAdmin(userId, prisma)
             if (!isAdmin) throw new ForbiddenError("You do not have permission to delete this listing")
         }
 
-        if(listing.bookings.length > 0){
-            const promises = listing.bookings.map((booking) => {
-                return deleteBookingById(booking.id, prisma)
-            })
-            await Promise.all(promises)
-            
-        }
+        // cascade prisma
+        // if (listing.bookings?.length > 0) {
+        //     const promises = listing.bookings.map((booking) => {
+        //         return deleteBookingById(booking.id, prisma)
+        //     })
+        //     await Promise.all(promises)
+        // }
 
         await prisma.listing.delete({
             where: {
                 id
             }
         })
-        return new Response(null, { status: 204 })
+
+        return new NextResponse(null, { status: 204 })
 
     } catch (error: any) {
         if (error instanceof ValidationError ||
@@ -154,14 +140,14 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
 //annan fil? api/listings/:id/book eller liknande?
 // export async function POST(request: NextRequest, options: APIOptions) {
 //     try {
-//         //Bryta ut validerings errors? 
+//         //Bryta ut validerings errors?
 //         const id = options.params.id
 //         if (!id) throw new ValidationError("Failed to retrive id")
 
 //         const userId = request.headers.get("userId")
 //         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
-//         //ÅTERKOM TILL DETTA VID TID 
+//         //ÅTERKOM TILL DETTA VID TID
 //         // const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
 //         // if (!objExists) throw new NotFoundError("Listing not found")
 //         // //byta namn på hasPermission till isMatch eller liknande?

@@ -7,3 +7,9 @@ type APIOptions = {
         [key: string]: string
     }
 }
+
+type IncludeObj = {
+    include: {
+    [key: string]: boolean
+    }
+}

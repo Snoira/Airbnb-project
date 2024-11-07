@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Status } from "@prisma/client";
 import { DatabaseError, ForbiddenError, NotFoundError, ValidationError } from "@/utils/errors";
-import { verifyUserById, deleteBookingById, getBookingById } from "@/utils/prisma"
+import { getUserById, deleteBookingById, getBookingById, getListingById } from "@/utils/prisma"
 import { bookingData, BookingStatus } from "@/types/booking";
+import { generateDateRange } from "@/helpers/bookingHelpers"
+import { getVerifiedUserId } from "@/utils/validators/userValidator";
 
 const prisma = new PrismaClient()
 //behövs denne egentligen? nås med include annars.
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
 
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to get userId from header")
-        await verifyUserById(userId, prisma)
+        await getUserById(userId, prisma)
 
 
         const booking = await getBookingById(id, prisma)
@@ -44,33 +46,60 @@ export async function GET(request: NextRequest, options: APIOptions) {
 
 export async function PATCH(request: NextRequest, options: APIOptions) {
     try {
+        // onödig?
         const id = options.params.id
-        if (!id) throw new ValidationError
+        if (!id) throw new ValidationError("Could not get id")
+
+        const userId = await getVerifiedUserId(request, prisma)
 
         const body: BookingStatus = await request.json()
-        if (!body.status) throw new ValidationError("New status is required")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Cound not get userId from header")
-        await verifyUserById(userId, prisma)
+        if (!body.status) throw new ValidationError("Booking status is requried")
+        const newStatus = body.status
+
+        //egentligen är bara accepted och denied relevant, men detta får funka nu.
+        const statusValues = Object.values(Status)
+
+        if (!statusValues.includes(newStatus)) throw new ValidationError(`Status not one of: ${statusValues.join(", ")}`)
 
         const booking = await getBookingById(id, prisma)
-        if (!booking) throw new NotFoundError("Could not find bookng")
-        if (booking.status !== "pending") throw new ValidationError(`Booking is already set ${booking.status}`)
+
+        if (!booking) throw new NotFoundError(`Could not find bookng, id: ${id}`)
+
+        if (booking.listingAgentId !== userId) throw new ForbiddenError("User must be listing agent")
+
+        if (booking.status !== "pending") throw new ValidationError(`Booking is already set to ${booking.status}`)
+
+        if (newStatus === "accepted") {
+            //vidareutveckling att skapa en ny model med "booked dates" istället för detta?
+            const requestedDates = generateDateRange(booking.checkin_date, booking.checkout_date)
+
+            const listing = await getListingById(booking.listingId, prisma)
+            if (!listing) throw new NotFoundError(`Could not find listing, id: ${booking.listingId}`)
+
+            const reservedDates = listing.reservedDates.concat(requestedDates)
+
+            await prisma.listing.update({
+                where: {
+                    id: listing.id
+                },
+                data: {
+                    reservedDates
+                }
+            })
+        }
 
         const updatedBooking = await prisma.booking.update({
             where: {
                 id
             },
             data: {
-                status: body.status
+                status: newStatus
             }
         })
 
-        if (!updatedBooking) throw new DatabaseError("could not update bookingstatus")
-
         return NextResponse.json(
-            { updatedBooking },
+            updatedBooking,
             { status: 200 }
         )
 
@@ -96,17 +125,10 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to get userId from header")
-        await verifyUserById(userId, prisma)
-
-        const body: bookingData = await request.json()
-        const { checkin_date, checkout_date } = body
-        if (!checkin_date) throw new ValidationError("Check in date is required")
-        if (!checkout_date) throw new ValidationError("Check out date is required")
+        const userId = await getVerifiedUserId(request, prisma)
 
         const booking = await getBookingById(id, prisma)
-        if (!booking) throw new NotFoundError("could not find booking")
+        if (!booking) throw new NotFoundError(`Could not find bookng, id: ${id}`)
         if (booking.renterId !== userId) throw new ForbiddenError("User is not allowed to delete booking")
 
         await deleteBookingById(id, prisma)

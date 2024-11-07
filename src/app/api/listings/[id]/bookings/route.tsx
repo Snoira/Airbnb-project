@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Status } from "@prisma/client";
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors";
 import { bookingData } from "@/types/booking"
 import { getListing, verifyUserById } from "@/utils/prisma";
 import { differenceInCalendarDays, add, isSameDay } from "date-fns";
+import { generateDateRange } from "@/helpers/bookingHelpers"
+import { getVerifiedUserId } from "@/utils/validators/userValidator"
 
 const prisma = new PrismaClient()
 
@@ -73,27 +75,32 @@ export async function POST(request: NextRequest, options: APIOptions) {
         if (!checkin_date) throw new ValidationError("Check in date is required")
         if (!checkout_date) throw new ValidationError("Check out date is required")
 
-        // const requestedDates: Date[] = []
+        // kolla igenom 
+       
 
-        // for (let i = 0; i <= numberOfDays; i++) {
-        //     requestedDates.push(
-        //         add(new Date(checkin_date), { days: i })
-        //     )
-        // }
+      
         // if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
 
-        // const isAvailable = requestedDates.every((requestedDate) => {
-        //     return listing.availability.some((availableDate) => {
+        // const isUnAvailable = requestedDates.every((requestedDate) => {
+        //     return listing.reservedDates.some((availableDate) => {
         //         return isSameDay(new Date(requestedDate), new Date(availableDate))
         //     })
         // })
-        const isAvailable = listing.reservedDates?.every((date: Date) => {
-            return (date < checkin_date && date > checkout_date)
-        })
+        // const isUnAvailable = listing.reservedDates?.every((date: Date) => {
+        //     return (date <= checkin_date && date >= checkout_date)
+        // })
+
+        console.log(typeof checkin_date)
+        const isAvailable = isDateRangeValid(
+            new Date(checkin_date),
+            new Date(checkout_date)
+            , listing.reservedDates)
+
+
+        const numberOfDays: number = differenceInCalendarDays(checkout_date, checkin_date)
 
         if (!isAvailable) throw new ValidationError("Listing is not available during the requested dates")
 
-        const numberOfDays: number = differenceInCalendarDays(checkout_date, checkin_date)
         const totalCost: number = numberOfDays * listing.pricePerNight
         if (!totalCost) throw new ValidationError("Couldn't calculate total cost")
 
@@ -122,10 +129,26 @@ export async function POST(request: NextRequest, options: APIOptions) {
                 { status: error.statusCode }
             )
         }
-
+        console.log("Error", error)
         return NextResponse.json(
             { message: "Internal Server Error" },
             { status: 500 }
         )
     }
+}
+
+
+function isDateRangeValid(checkIn: Date, checkOut: Date, bookedDates: Date[]): boolean {
+    // Generate all dates between check-in and check-out (inclusive)
+    const requestedDates = generateDateRange(checkIn, checkOut);
+    console.log("Requested dates: ", requestedDates)
+
+    // Check if any of the requested dates are in the booked dates
+    for (const date of requestedDates) {
+        if (bookedDates.some(bookedDate => bookedDate.getTime() === date.getTime())) {
+            return false; // A conflict is found
+        }
+    }
+
+    return true; // No conflicts found, the date range is valid
 }

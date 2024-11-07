@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
       console.log("not safe path")
 
       const Authorization = request.headers.get("Authorization")
+      // console.log("authorization", Authorization)
       if (!Authorization) {
         //inkonsekvent errorhantering på olika sidors
         //reserch, jämför olika sätt, pros cons
@@ -20,13 +21,13 @@ export async function middleware(request: NextRequest) {
         // return NextResponse.redirect(new URL('/login', request.url))
       }
 
-      const token = Authorization.split(" ")?.[1] || null
-      if (!token) {
-        throw new Error("No token")
-      }
-      console.log("Authorization -> token", token)
+      // const token = Authorization.split(" ")?.[1] || null
+      // if (!token) {
+      //   throw new Error("No token")
+      // }
+      // console.log("Authorization -> token", token)
 
-      const decryptedToken = await verifyJWT(token)
+      const decryptedToken = await verifyJWT(Authorization)
       if (!decryptedToken) {
         throw new Error("No token payload")
       }
@@ -39,7 +40,7 @@ export async function middleware(request: NextRequest) {
       )
 
     } catch (error: any) {
-      console.log("Error validating token: ", error.message)
+      // console.log("Error validating token: ", error.message)
 
       return NextResponse.json(
         { message: "Unauthenticated" },
