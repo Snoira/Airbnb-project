@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { ListingData } from "@/types/listing"
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors"
-import { getVerifiedUserId } from "@/utils/validators/userValidator"
+import { getVerifiedUserId } from "@/helpers/requestHelpers"
 
 const prisma = new PrismaClient()
 

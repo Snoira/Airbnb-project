@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Status } from "@prisma/client";
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors";
 import { bookingData } from "@/types/booking"
-import { getListing, verifyUserById } from "@/utils/prisma";
+import { getListingById  } from "@/utils/prisma";
 import { differenceInCalendarDays, add, isSameDay } from "date-fns";
 import { generateDateRange } from "@/helpers/bookingHelpers"
-import { getVerifiedUserId } from "@/utils/validators/userValidator"
+import { getVerifiedUserId} from "@/helpers/requestHelpers"
 
 const prisma = new PrismaClient()
 
@@ -14,9 +14,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
-        //kolla om usern existerar?
+        const userId = await getVerifiedUserId(request, prisma)
 
         const listing = await prisma.listing.findUnique({
             where: {
@@ -49,24 +47,15 @@ export async function GET(request: NextRequest, options: APIOptions) {
     }
 }
 
-
 export async function POST(request: NextRequest, options: APIOptions) {
     try {
         //Bryta ut validerings errors? 
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
-        await verifyUserById(userId, prisma)
+        const userId = await getVerifiedUserId(request, prisma)
 
-        //ÅTERKOM TILL DETTA VID TID 
-        // const [objExists, hasPermission] = await checkListingAndPermission(id, prisma, userId)
-        // if (!objExists) throw new NotFoundError("Listing not found")
-        // //byta namn på hasPermission till isMatch eller liknande?
-        // if (hasPermission) throw new Error("Can't book your own listing")
-        const listing = await getListing(id, prisma) //skicka in objekt som specificerar fält?
-        if (!listing) throw new NotFoundError("Listing not found")
+        const listing = await getListingById(id, prisma) //skicka in objekt som specificerar fält?
         if (listing.createdById === userId) throw new ValidationError("Can't book your own listing")
 
         //Bryta ut bookingValidation
@@ -76,9 +65,6 @@ export async function POST(request: NextRequest, options: APIOptions) {
         if (!checkout_date) throw new ValidationError("Check out date is required")
 
         // kolla igenom 
-       
-
-      
         // if (requestedDates.length < 2) throw new ValidationError("could not create an array of requested dates")
 
         // const isUnAvailable = requestedDates.every((requestedDate) => {
@@ -90,12 +76,10 @@ export async function POST(request: NextRequest, options: APIOptions) {
         //     return (date <= checkin_date && date >= checkout_date)
         // })
 
-        console.log(typeof checkin_date)
         const isAvailable = isDateRangeValid(
             new Date(checkin_date),
-            new Date(checkout_date)
-            , listing.reservedDates)
-
+            new Date(checkout_date),
+            listing.reservedDates)
 
         const numberOfDays: number = differenceInCalendarDays(checkout_date, checkin_date)
 
@@ -136,7 +120,6 @@ export async function POST(request: NextRequest, options: APIOptions) {
         )
     }
 }
-
 
 function isDateRangeValid(checkIn: Date, checkOut: Date, bookedDates: Date[]): boolean {
     // Generate all dates between check-in and check-out (inclusive)

@@ -12,7 +12,6 @@ export async function middleware(request: NextRequest) {
       console.log("not safe path")
 
       const Authorization = request.headers.get("Authorization")
-      // console.log("authorization", Authorization)
       if (!Authorization) {
         //inkonsekvent errorhantering på olika sidors
         //reserch, jämför olika sätt, pros cons
@@ -55,6 +54,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/api/listings/",
-    "/api/listings/:id*"
+    "/api/listings/:id*",
+    "/api/bookngs/:id*"
   ],
 }

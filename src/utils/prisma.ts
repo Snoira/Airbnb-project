@@ -2,15 +2,13 @@ import { PrismaClient, User, Listing, Booking, Role } from "@prisma/client";
 import { DatabaseError, NotFoundError } from "@/utils/errors"
 import { ListingWithBookings } from "@/types/listing"
 
-export async function getUserByEmail(email: string, client: PrismaClient): Promise<User> {
+export async function getUserByEmail(email: string, client: PrismaClient): Promise<User| null> {
     try {
         const user = await client.user.findUnique({
             where: {
                 email
             }
         })
-
-        if (!user) throw new NotFoundError(`Could not find user, email: ${email}`)
 
         return user
 
@@ -47,7 +45,7 @@ export async function getUserById(userId: string, client: PrismaClient, includeF
 export async function getListingById(listingId: string, client: PrismaClient, includeField?: string): Promise<Listing> {
     try {
 
-        // const include = includeField ? { [includeField]: true } : {};
+        const include = includeField ? { [includeField]: true } : {};
 
         const listing = await client.listing.findUnique({
             where: {

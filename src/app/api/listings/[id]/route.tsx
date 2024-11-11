@@ -4,8 +4,7 @@ import { ListingData, ListingWithBookings } from "@/types/listing";
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors"
 import { checkAdmin, deleteBookingById, getListingById } from "@/utils/prisma"
-import { getVerifiedUserId } from "@/utils/validators/userValidator"
-import Listing from "@/app/listings/[id]/page";
+import { getVerifiedUserId } from "@/helpers/requestHelpers"
 
 const prisma = new PrismaClient
 
@@ -93,7 +92,6 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         if (!id) throw new ValidationError("Failed to retrive id")
 
         const userId = await getVerifiedUserId(request, prisma)
-        console.clear()
 
         const includeField = "bookings"
         const listing = await getListingById(id, prisma, includeField)
@@ -112,11 +110,7 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         //     await Promise.all(promises)
         // }
 
-        await prisma.listing.delete({
-            where: {
-                id
-            }
-        })
+        await deleteBookingById(id, prisma)
 
         return new NextResponse(null, { status: 204 })
 

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Status } from "@prisma/client";
 import { DatabaseError, ForbiddenError, NotFoundError, ValidationError } from "@/utils/errors";
-import { getUserById, deleteBookingById, getBookingById, getListingById } from "@/utils/prisma"
+import { deleteBookingById, getBookingById, getListingById } from "@/utils/prisma"
 import { bookingData, BookingStatus } from "@/types/booking";
 import { generateDateRange } from "@/helpers/bookingHelpers"
-import { getVerifiedUserId } from "@/utils/validators/userValidator";
+import { getVerifiedUserId } from "@/helpers/requestHelpers";
 
 const prisma = new PrismaClient()
 //behövs denne egentligen? nås med include annars.
@@ -13,13 +13,9 @@ export async function GET(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to get userId from header")
-        await getUserById(userId, prisma)
-
+        const userId = await getVerifiedUserId(request, prisma)
 
         const booking = await getBookingById(id, prisma)
-        if (!booking) throw new NotFoundError("Could not find booking")
 
         const hasPermission: boolean = (userId === booking.renterId || userId === booking.listingAgentId)
         if (!hasPermission) throw new ForbiddenError("User does not have permission to access booking")
@@ -46,15 +42,14 @@ export async function GET(request: NextRequest, options: APIOptions) {
 
 export async function PATCH(request: NextRequest, options: APIOptions) {
     try {
-        // onödig?
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
         const userId = await getVerifiedUserId(request, prisma)
 
         const body: BookingStatus = await request.json()
-
         if (!body.status) throw new ValidationError("Booking status is requried")
+
         const newStatus = body.status
 
         //egentligen är bara accepted och denied relevant, men detta får funka nu.
@@ -128,7 +123,6 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         const userId = await getVerifiedUserId(request, prisma)
 
         const booking = await getBookingById(id, prisma)
-        if (!booking) throw new NotFoundError(`Could not find bookng, id: ${id}`)
         if (booking.renterId !== userId) throw new ForbiddenError("User is not allowed to delete booking")
 
         await deleteBookingById(id, prisma)

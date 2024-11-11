@@ -42,7 +42,7 @@ listing         Listing    @relation(fields: [listingId], references: [id], onDe
 listingAgentId  String
 listingAgent    User       @relation("BookingsAsAgent", fields: [listingAgentId], references: [id])
 renterId        String
-renter          User       @relation("BookingAsRenter", fields: [renterId], references: [id], onUpdate: Restrict)
+renter          User       @relation("BookingAsRenter", fields: [renterId], references: [id])
 createdAt       DateTime   @default(now())
 checkin_date    DateTime
 checkout_date   DateTime

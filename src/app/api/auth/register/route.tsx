@@ -11,7 +11,6 @@ const prisma = new PrismaClient()
 export async function POST(request: NextRequest) {
     try {
         const body: UserRegistrationData = await request.json()
-        console.log("BODY", body)
 
         const [hasErrors, errors] = registrationValidation(body)
         if (hasErrors) {
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
-        console.log("bodu validated")
 
         const isRegistered = await getUserByEmail(body.email.toLowerCase(), prisma)
 
@@ -32,7 +30,6 @@ export async function POST(request: NextRequest) {
         }
 
         const password: string = await bcrypt.hash(body.password, 10);
-        console.log("PASSWORD", password)
 
         const newUser: User = await prisma.user.create({
             data: {
@@ -40,10 +37,9 @@ export async function POST(request: NextRequest) {
                 password: password,
                 name: body.name
             }
-        }
-        )
+        })
 
-        const token: string = await signJWT({ userId: newUser.id }) //onödigt att ha :string eftersom signJWT Promise<string>?
+        const token = await signJWT({ userId: newUser.id })
 
         return NextResponse.json(
             { token },

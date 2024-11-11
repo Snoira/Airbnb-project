@@ -5,14 +5,14 @@ import { loginValidation } from "@/utils/validators/userValidator"
 import bcrypt from "bcrypt"
 import { signJWT } from "@/utils/jwt"
 import {getUserByEmail} from "@/utils/prisma"
-import { NotFoundError } from "@/utils/errors"
+import { ValidationError } from "@/utils/errors"
 
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
     try {
         const body: UserLoginData = await request.json()
-        console.log("BODY", body)
+
         const [hasErrors, errors] = loginValidation(body)
         if (hasErrors) {
             return NextResponse.json(
@@ -20,17 +20,14 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
-        console.log("validated")
 
         const user = await getUserByEmail(body.email.toLowerCase(), prisma)
-        if(!user) throw new NotFoundError("User not found")
-        console.log("USER", user)
+        if (!user) throw new ValidationError(`Could not find user with match credentials`)
 
         const isPasswordMatch: boolean = await bcrypt.compare(body.password, user.password)
         if (!isPasswordMatch) {
-            throw new Error("Wrong password")
+            throw new ValidationError(`Could not find user with match credentials`)
         }
-        console.log("password is a match")
 
         const token = await signJWT(
             { userId: user.id }
