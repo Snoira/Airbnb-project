@@ -14,7 +14,8 @@ export async function GET(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = await getVerifiedUserId(request, prisma)
+        // const userId = await getVerifiedUserId(request, prisma)
+        const userId = await request.json()
 
         const listing = await prisma.listing.findUnique({
             where: {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
             error instanceof NotFoundError ||
             error instanceof ForbiddenError)
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
         return NextResponse.json(
@@ -53,8 +54,9 @@ export async function POST(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = await getVerifiedUserId(request, prisma)
-
+        // const userId = await getVerifiedUserId(request, prisma)
+            const userId = await request.json()
+            
         const listing = await getListingById(id, prisma) //skicka in objekt som specificerar fält?
         if (listing.createdById === userId) throw new ValidationError("Can't book your own listing")
 
@@ -109,17 +111,17 @@ export async function POST(request: NextRequest, options: APIOptions) {
             error instanceof NotFoundError ||
             error instanceof DatabaseError) {
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
         }
         console.log("Error", error)
         return NextResponse.json(
-            { message: "Internal Server Error" },
+            { error: "Internal Server Error" },
             { status: 500 }
         )
     }
-}
+} 
 
 function isDateRangeValid(checkIn: Date, checkOut: Date, bookedDates: Date[]): boolean {
     // Generate all dates between check-in and check-out (inclusive)

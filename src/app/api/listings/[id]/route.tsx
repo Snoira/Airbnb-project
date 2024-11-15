@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
             error instanceof NotFoundError ||
             error instanceof DatabaseError)
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
         return NextResponse.json(
@@ -40,15 +40,18 @@ export async function PUT(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = await getVerifiedUserId(request, prisma)
-
-        const body: ListingData = await request.json()
-        const [hasErrors, errorText] = listingValidation(body)
+            // const userId = await getVerifiedUserId(request, prisma)
+            
+            const body: ListingData = await request.json()
+            const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
+
+            if(!body.createdById) throw new ValidationError("no userId")
+                const userId = body.createdById
 
         //använda checkListing istället?
         const listing = await getListingById(id, prisma)
-        if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
+        // if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
 
         const updatedListing = await prisma.listing.update({
             where: {
@@ -74,12 +77,12 @@ export async function PUT(request: NextRequest, options: APIOptions) {
             error instanceof ForbiddenError ||
             error instanceof DatabaseError)
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
 
         return NextResponse.json(
-            { message: "Internal Server Erroro" },
+            { error: "Internal Server Erroro" },
             { status: 500 }
         )
     }
@@ -91,7 +94,9 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Failed to retrive id")
 
-        const userId = await getVerifiedUserId(request, prisma)
+        // const userId = await getVerifiedUserId(request, prisma)
+        const body = await request.json()
+        const userId = body.createdById
 
         const includeField = "bookings"
         const listing = await getListingById(id, prisma, includeField)
@@ -121,12 +126,12 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
             error instanceof DatabaseError
         ) {
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
         }
         return NextResponse.json(
-            { message: "Internal Server Error" },
+            { error: "Internal Server Error" },
             { status: 500 }
         )
     }

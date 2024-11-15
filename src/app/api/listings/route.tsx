@@ -11,7 +11,9 @@ export async function POST(request: NextRequest) {
     try {
         const body: ListingData = await request.json()
 
-        const userId = await getVerifiedUserId(request, prisma)
+        // const userId = await getVerifiedUserId(request, prisma)
+        if(!body.createdById) throw new ValidationError("no createdById")
+        const userId = body.createdById 
 
         const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
@@ -37,13 +39,13 @@ export async function POST(request: NextRequest) {
             error instanceof NotFoundError ||
             error instanceof DatabaseError)
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
     }
 
     return NextResponse.json(
-        { message: "Internal Server Error" },
+        { error: "Internal Server Error" },
         { status: 500 }
     )
 }
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
         if (error instanceof NotFoundError) {
             return NextResponse.json(
-                { message: error.message },
+                { error: error.message },
                 { status: error.statusCode }
             )
         }

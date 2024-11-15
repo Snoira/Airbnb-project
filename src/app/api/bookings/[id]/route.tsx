@@ -12,13 +12,13 @@ export async function GET(request: NextRequest, options: APIOptions) {
     try {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
-
-        const userId = await getVerifiedUserId(request, prisma)
+        
+        // const userId = await getVerifiedUserId(request, prisma)
 
         const booking = await getBookingById(id, prisma)
 
-        const hasPermission: boolean = (userId === booking.renterId || userId === booking.listingAgentId)
-        if (!hasPermission) throw new ForbiddenError("User does not have permission to access booking")
+        // const hasPermission: boolean = (userId === booking.renterId || userId === booking.listingAgentId)
+        // if (!hasPermission) throw new ForbiddenError("User does not have permission to access booking")
 
         return NextResponse.json(
             { booking },
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
-        const userId = await getVerifiedUserId(request, prisma)
+        // const userId = await getVerifiedUserId(request, prisma)
 
         const body: BookingStatus = await request.json()
         if (!body.status) throw new ValidationError("Booking status is requried")
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest, options: APIOptions) {
 
         if (!booking) throw new NotFoundError(`Could not find bookng, id: ${id}`)
 
-        if (booking.listingAgentId !== userId) throw new ForbiddenError("User must be listing agent")
+        // if (booking.listingAgentId !== userId) throw new ForbiddenError("User must be listing agent")
 
         if (booking.status !== "pending") throw new ValidationError(`Booking is already set to ${booking.status}`)
 
@@ -120,10 +120,10 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
-        const userId = await getVerifiedUserId(request, prisma)
+        // const userId = await getVerifiedUserId(request, prisma)
 
         const booking = await getBookingById(id, prisma)
-        if (booking.renterId !== userId) throw new ForbiddenError("User is not allowed to delete booking")
+        // if (booking.renterId !== userId) throw new ForbiddenError("User is not allowed to delete booking")
 
         await deleteBookingById(id, prisma)
 
