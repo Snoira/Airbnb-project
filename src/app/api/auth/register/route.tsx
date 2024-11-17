@@ -2,7 +2,7 @@ import { PrismaClient, User } from "@prisma/client"
 import { UserRegistrationData } from "@/types/user"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcrypt"
-import { signJWT } from "@/utils/jwt"
+import { createSession } from "@/utils/jwt"
 import { registrationValidation } from "@/utils/validators/userValidator"
 import { getUserByEmail } from "@/utils/prisma"
 import { ValidationError } from "@/utils/errors"
@@ -30,10 +30,10 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        const token = await signJWT({ userId: newUser.id })
+        const token = await createSession(newUser.id)
 
         return NextResponse.json(
-            { token },
+            { message: "User registered successfully" },
             { status: 201 }
         )
 

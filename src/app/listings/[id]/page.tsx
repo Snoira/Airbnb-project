@@ -14,7 +14,7 @@ export default async function Listing(options: APIOptions) {
                     <p>{listing.pricePerNight} kr per natt</p>
                     <p className="pb-1">{listing.location}</p>
                     <p>{listing.description}</p>
-                    <button className="border border-black p-1">Book Listing</button>
+                    
                 </div>
             }
         </div>

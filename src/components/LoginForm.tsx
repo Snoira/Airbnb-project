@@ -46,7 +46,6 @@ export function LoginForm() {
                 <input
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     type="text"
-                    id="email"
                     name="email"
                     placeholder="Email"
                     value={formData.email}
@@ -61,7 +60,6 @@ export function LoginForm() {
                 <input
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     type="password"
-                    id="password"
                     name="password"
                     placeholder="********"
                     value={formData.password}

@@ -1,4 +1,5 @@
 import * as Yup from "yup"
+import { ListingData } from "@/types/listing"
 
 export const registerFormSchema = Yup.object().shape({
     email: Yup.string()
@@ -21,3 +22,16 @@ export const loginFormSchema = Yup.object().shape({
         .required('Required'),
 })
 
+export const listingFormSchema = Yup.object().shape({
+    name: Yup.string()
+        .max(500, 'Invalid email format')
+        .required('Required'),
+    descriprion: Yup.string()
+        .min(500, 'Must be less than 500 characters')
+        .required('Required'),
+    location: Yup.string()
+        .required('Required'),
+    pricePerNight: Yup.number()
+        .required('Required'),
+
+})

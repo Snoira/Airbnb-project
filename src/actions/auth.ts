@@ -31,8 +31,8 @@ export async function login(formData: UserLoginData) {
         })
 
         if (res.ok) {
-            const data = res.json()
-            console.log("TOKEN?", data)
+            const data = await res.json()
+            console.log("LOGGED IN?", data.message)
 
         }
         else console.log("RES NOT OK", res.status)

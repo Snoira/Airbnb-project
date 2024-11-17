@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { UserLoginData } from "@/types/user"
 import { loginValidation } from "@/utils/validators/userValidator"
 import bcrypt from "bcrypt"
-import { signJWT } from "@/utils/jwt"
+import { createSession } from "@/utils/jwt"
 import {getUserByEmail} from "@/utils/prisma"
 import { ValidationError } from "@/utils/errors"
 
@@ -29,13 +29,11 @@ export async function POST(request: NextRequest) {
             throw new ValidationError(`Could not find user with match credentials`)
         }
 
-        const token = await signJWT(
-            { userId: user.id }
-        )
+        await createSession( user.id )
 
         return NextResponse.json(
-            { token: token },
-            {status: 200}
+            { message: "User succesfully logged in" },
+            {status: 201}
         )
 
     } catch (error: any) {
