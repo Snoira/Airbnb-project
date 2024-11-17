@@ -12,24 +12,13 @@ const prisma = new PrismaClient()
 export async function POST(request: NextRequest) {
     try {
         const body: UserRegistrationData = await request.json()
-        const [hasErrors, errors] = registrationValidation(body)
-        if (hasErrors) throw new ValidationError(`${errors}`)
-        //     {
-        //     return NextResponse.json(
-        //         { error: errors },
-        //         { status: 400 }
-        //     )
-        // }
+        
+        const [hasErrors, errorText] = registrationValidation(body)
+        if (hasErrors) throw new ValidationError(errorText)
 
         const isRegistered = await getUserByEmail(body.email.toLowerCase(), prisma)
 
         if (isRegistered) throw new ValidationError(`User already exists`)
-        //     {
-        //     return NextResponse.json(
-        //         { error: "User already exists" }, //skriva annat för bättre säkerhet?
-        //         { status: 400 }
-        //     )
-        // }
 
         const password: string = await bcrypt.hash(body.password, 10);
 

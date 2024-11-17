@@ -1,5 +1,6 @@
 import { getListings } from "@/actions/listings"
 import { RegisterForm } from "@/components/RegisterForm";
+import { LoginForm } from "@/components/LoginForm"
 import Link from "next/link";
 
 export default async function Home() {
@@ -10,7 +11,8 @@ export default async function Home() {
     <div className="p-10">
       <main >
         <h1 className="text-lg pb-5">Listings</h1>
-        <RegisterForm />
+        {/* <RegisterForm /> */}
+        <LoginForm />
         {
           listings && listings.map(listing => (
             <div key={listing.id}

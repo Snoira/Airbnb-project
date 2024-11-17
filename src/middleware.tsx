@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyJWT } from "@/utils/jwt"
 
 const UNSAFE_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
+const publicRoutes = ['/login', '/signup', '/']
 
 export async function middleware(request: NextRequest) {
   const url = new URL(request.url)

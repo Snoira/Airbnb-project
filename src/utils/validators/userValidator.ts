@@ -1,21 +1,24 @@
 import { UserRegistrationData, UserLoginData } from "@/types/user"
 
 
-export function registrationValidation(data: UserRegistrationData): [boolean, ErrorObject] {
-    let errors: ErrorObject = {}
-    if (!data.email) errors.email = "Email is required"
-    if (!data.name) errors.name = "Name is required"
-    if (!data.password) errors.password = "password is required"
+export function registrationValidation(data: UserRegistrationData): [boolean, string] {
 
-    const hasErrors = Object.keys(errors).length !== 0
-    return [hasErrors, errors]
+    let errors: string[]= []
+    if (!data.email)  errors.push("Email")
+    if (!data.name)  errors.push("Name")
+    if (!data.password)  errors.push("Password")
+
+    const hasErrors = errors.length !== 0
+    const errorText: string = (errors.join(", ")+" is required")
+    return [hasErrors, errorText]
 }
 
-export function loginValidation(data: UserLoginData): [boolean, ErrorObject] {
-    let errors: ErrorObject = {}
-    if (!data.email) errors.email = "Email is required"
-    if (!data.password) errors.password = "password is required"
+export function loginValidation(data: UserLoginData): [boolean, string] {
+    let errors: string[]= []
+    if (!data.email) errors.push("Email")
+    if (!data.password) errors.push("Password")
 
-    const hasErrors = Object.keys(errors).length !== 0
-    return [hasErrors, errors]
+    const hasErrors = errors.length !== 0
+    const errorText: string = (errors.join(", ")+" is required")
+    return [hasErrors, errorText]
 }

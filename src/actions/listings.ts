@@ -25,7 +25,7 @@ export async function getListings(): Promise<Listing[] | undefined> {
 
 export async function getListingById(id: string): Promise<Listing | undefined> {
     try {
-        const res = await fetch(`${url}/${id}`,
+        const res = await fetch(`${url}${id}`,
             { method: "GET" }
         )
 
@@ -42,3 +42,13 @@ export async function getListingById(id: string): Promise<Listing | undefined> {
         console.log(error)
     }
 }
+
+// export async function createListing(): Promise <Listing | undefined> {
+//     try{
+//         const res = await fetch(url, {
+
+//         })
+//     }catch(){
+
+//     }
+// }

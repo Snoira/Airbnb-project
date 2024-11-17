@@ -52,36 +52,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        // const searchParams = new URL(request.url).searchParams
-        // const createdById = searchParams.get("createdById")
-        //inte optimalt, kommer skapa problem om en person skickar in flera queries. lösa sen.
-        // const queryNames: string[] = ["name", "loc"]
-        // const searchParams = new URL(request.url).searchParams
-        // const [name, loc] = queryNames.map(query => searchParams.get(query))
-
-        // let where: { [key: string]: any } = {}
-
-        // if (name) {
-        //     where.name = {
-        //         contains: name,
-        //         mode: "insensitive"
-        //     }
-        // }
-
-        // if (loc) {
-        //     where.location = {
-        //         contains: loc,
-        //         mode: "insensitive"
-        //     }
-        // }
-        // lägg price per night använder equals eller gte (greaterThan) och lte(lesserThan) för intervall match
-        // lägg till dates. måste bestämma sparande av datum först.
-
-        // const listings = await prisma.listing.findMany({
-        //     where
-        // })
-
-        //skapa en lösning med include när det behövs?
         const listings = await prisma.listing.findMany()
         if (listings.length === 0) throw new NotFoundError("No listings found")
 

@@ -1,47 +1,42 @@
+import { UserRegistrationData, UserLoginData } from "@/types/user";
+
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/auth/`);
 
-export async function register(formData: FormData) {
+export async function register(formData: UserRegistrationData) {
     try {
-        const user = {
-            name: formData.get("name"),
-            email: formData.get("email"),
-            password: formData.get("password")
-        }
-
-        console.log("User", user)
-
+        console.log("REGISTER FORMDATA", formData)
         const res = await fetch(`${url}register`, {
             method: "POST",
-            body: JSON.stringify(user)
+            body: JSON.stringify(formData)
         })
 
-        console.log("RES", res)
         if (res.ok) {
             const data = res.json()
             console.log("TOKEN?", data)
 
         }
-        console.log("RES NOT OK", res.status)
+        else console.log("RES NOT OK", res.status)
 
     } catch (error) {
-
+        console.log("ERROR REGISTERFUNC", error)
     }
 }
 
-export async function login(formData: FormData) {
-    const user = {
-        email: formData.get("email"),
-        password: formData.get("password")
-    }
-    const res = await fetch(`${url}login`, {
-        method: "POST",
-        body: JSON.stringify(user)
-    })
-    if (res.ok) {
-        const data = res.json()
-        console.log("TOKEN?", data)
+export async function login(formData: UserLoginData) {
+    try {
+        const res = await fetch(`${url}login`, {
+            method: "POST",
+            body: JSON.stringify(formData)
+        })
 
+        if (res.ok) {
+            const data = res.json()
+            console.log("TOKEN?", data)
+
+        }
+        else console.log("RES NOT OK", res.status)
+    } catch (error) {
+        console.log("ERROR LOGINFUNC", error)
     }
-    console.log("RES NOT OK", res.status)
 }
