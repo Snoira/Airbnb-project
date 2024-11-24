@@ -28,9 +28,9 @@ export function RegisterForm() {
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
-            if( error instanceof Yup.ValidationError) {
-                const errors = (error.inner.map((err)=> {
-                    return( `${err.path}: ${err.message}`)
+            if (error instanceof Yup.ValidationError) {
+                const errors = (error.inner.map((err) => {
+                    return (`${err.path}: ${err.message}`)
                 }))
                 console.log(errors.join(", "))
             }
@@ -38,8 +38,7 @@ export function RegisterForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit}
-            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
+        <form onSubmit={handleSubmit}>
             <div className="space-y-2">
                 <label htmlFor="name"
                     className="block text-sm font-medium text-gray-700">

@@ -3,7 +3,7 @@ import { decrypt } from "@/utils/jwt"
 import { cookies } from "next/headers"
 
 const protectedRoutes = [
-  "/dashboard",
+  // "/dashboard",
   "/api/users/me",
   "/api/listings/:id*",
   "/api/bookngs/:id*"
@@ -24,26 +24,26 @@ export default async function middleware(request: NextRequest) {
 
   if (isProtectedRoute || isProtectedMethod) {
     try {
-
       console.warn("--------------PROTECTED--------------")
-      const cookieHeader = request.headers.get('cookie'); // Debug headers
-      console.log('Cookie Header:', cookieHeader);
-      
-      const cookieStore = cookies()
-      const cookie: string | undefined = cookieStore.get("session")?.value
-      console.log("COOKIE", cookie) // Cookie hämtas!
 
-      if (!cookie) return NextResponse.redirect(new URL('/', request.nextUrl))
-      const sessionData = await decrypt(cookie)
+      const Authorization = request.headers.get("Authorization");
+
+      if (!Authorization) {
+        throw new Error("No authrization header");
+      }
+      const token = Authorization.split(" ")?.[1] || null;
+      if (!token) {
+        throw new Error("No token");
+      }
+  
+      const sessionData = await decrypt(token)
 
       if (!sessionData?.userId) return NextResponse.redirect(new URL('/', request.nextUrl))
-
-      console.log("USERID: ", sessionData.userId)
 
       const headers = new Headers(request.headers)
       headers.set("userId", sessionData.userId)
 
-      console.log("SLUT PÅ MIDDLEWARE -> NEXT")
+      console.log("______________________________")
 
       return NextResponse.next(
         { headers }
@@ -63,7 +63,7 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard",
+    // "/dashboard",
     "/api/users/me",
     "/api/listings",
     "/api/listings/:id*",

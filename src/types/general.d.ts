@@ -18,3 +18,10 @@ type SessionObj = {
     isAuth: boolean,
     userId: string | null
 }
+
+type JWTUserPayload = {
+    userId: string;
+    [key: string]: any;
+}
+
+type Function = () => void;

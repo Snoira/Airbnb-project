@@ -1,16 +1,14 @@
 import { getListingsWithBookingsByUserId } from "@/actions/listings"
-import {getSafeUser} from "@/lib/dal"
+import {Header} from "@/components/Header"
 
 export default async function Dashboard() {
     const listings = await getListingsWithBookingsByUserId()
-    const user = await getSafeUser()
 
     return (
         <div>
             <h1>
                 DASHBOARD
             </h1>
-            <h2>HEJ {user?.name} </h2>
             <p>CREATE LISTING</p>
             <p>YOUR LISTINGS</p>
             {

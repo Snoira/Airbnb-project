@@ -1,14 +1,13 @@
 import { getListings } from "@/actions/listings"
-import { RegisterForm } from "@/components/RegisterForm";
-import { LoginForm } from "@/components/LoginForm"
+import {Header} from "@/components/Header"
 import Link from "next/link";
-import { verifySession } from "@/lib/dal"
 
 export default async function Home() {
 
   const listings = await getListings()
   return (
     <div className="p-10">
+        <Header/>
       <main >
         <h1 className="text-lg pb-5">Listings</h1>
         {

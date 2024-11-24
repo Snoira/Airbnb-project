@@ -2,10 +2,10 @@ import { PrismaClient, User } from "@prisma/client"
 import { UserRegistrationData } from "@/types/user"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcrypt"
-import { createSession } from "@/utils/jwt"
+import { encrypt } from "@/utils/jwt"
 import { registrationValidation } from "@/utils/validators/userValidator"
 import { getUserByEmail } from "@/utils/prisma"
-import { ValidationError } from "@/utils/errors"
+import { DatabaseError, ValidationError } from "@/utils/errors"
 
 const prisma = new PrismaClient()
 
@@ -30,10 +30,14 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        const token = await createSession(newUser.id)
+        if(!newUser) throw new DatabaseError("Could not create user")
+
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const sessionData: JWTUserPayload = { userId: newUser.id, expiresAt };
+        const token = await encrypt(sessionData);
 
         return NextResponse.json(
-            { message: "User registered successfully" },
+            token,
             { status: 201 }
         )
 

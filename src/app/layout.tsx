@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { getSafeUser } from "@/lib/dal";
+import Providers from "./providers"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,14 +25,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  // const user = await getSafeUser()
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers> {children} </Providers>
       </body>
     </html>
   );

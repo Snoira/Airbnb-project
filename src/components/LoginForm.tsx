@@ -1,11 +1,14 @@
 "use client";
 import { useState } from "react";
 import * as Yup from "yup"
-import { login } from "@/actions/auth";
+import { useUser } from "@/context/user"
 import { loginFormSchema } from "@/lib/definitions"
 import { UserLoginData } from "@/types/user";
 
+
 export function LoginForm() {
+    const user = useUser()
+
     const [formData, setFormData] = useState<UserLoginData>({
         email: "",
         password: ""
@@ -23,14 +26,15 @@ export function LoginForm() {
         event.preventDefault()
         try {
             await loginFormSchema.validate(formData, { abortEarly: false })
-            await login(formData)
+
+            user.actions.login(formData.email, formData.password, () => { }, () => { }) //onödiga??
             //extra funkis: om 201, Sstäng komponent och ändra till "logga ut" knapp.
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
-            if( error instanceof Yup.ValidationError) {
-                const errors = (error.inner.map((err)=> {
-                    return( `${err.path}: ${err.message}`)
+            if (error instanceof Yup.ValidationError) {
+                const errors = (error.inner.map((err) => {
+                    return (`${err.path}: ${err.message}`)
                 }))
                 console.log(errors.join(", "))
             }
@@ -38,8 +42,7 @@ export function LoginForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit}
-            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
+        <form onSubmit={handleSubmit}>
             <div className="space-y-2">
                 <label htmlFor="email"
                     className="block text-sm font-medium text-gray-700"
