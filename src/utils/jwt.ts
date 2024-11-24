@@ -33,38 +33,43 @@ export async function encrypt(payload: JWTUserPayload): Promise<string> {
 export async function decrypt(token: string): Promise<JWTUserPayload | null> {
     try {
         const { payload } = await Jose.jwtVerify(token, encodedSecret)
-        return payload as JWTUserPayload
-
-    } catch (error) {
+        return payload as JWTUserPayload 
+        
+    } catch (error:any) {
         if (error instanceof Jose.errors.JWTExpired) {
-            console.error('JWT has expired:', error)
+            // await deleteSession()
+            //implementera funktionalitet som varnar och frågar om ny token ska göras?
+            console.error('JWT is invalid:', error.code)
         } else if (error instanceof Jose.errors.JWTInvalid) {
-            console.error('JWT is invalid:', error)
+            console.error('JWT is invalid:', error.code)
         } else {
-            console.error('JWT verification failed:', error)
+            console.error('JWT verification failed:', error.code)
         }
 
         return null
     }
 }
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string): Promise<undefined> {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const sessionData = { userId, expiresAt };
-  const encryptedSession = await encrypt(sessionData); // Kryptera sessionData
+  const sessionData: JWTUserPayload = { userId, expiresAt };
+  const encryptedSession = await encrypt(sessionData); // Kryptera sessionData- bättre att kalla token?
 
   const cookieStore = cookies(); // Hämta cookieStore
-  cookieStore.set('session', encryptedSession, {
-    httpOnly: true,
-    // secure: true,
-    expires: expiresAt,
-    sameSite: 'lax',
-    path: '/',
-    domain: 'localhost'
-  });
+  cookieStore.set('session', encryptedSession, 
+//     {
+//     httpOnly: true,
+//     secure: true,
+//     expires: expiresAt,
+//     sameSite: 'lax',
+//     path: '/',
+//     // domain: 'localhost'
+//     domain: undefined
+//   }
+);
 }
 
-export async function deleteSession() {
-    const cookieStore = await cookies()
+export async function deleteSession(): Promise <undefined> {
+    const cookieStore = cookies()
     cookieStore.delete('session')
   }

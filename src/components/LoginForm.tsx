@@ -24,6 +24,7 @@ export function LoginForm() {
         try {
             await loginFormSchema.validate(formData, { abortEarly: false })
             await login(formData)
+            //extra funkis: om 201, Sstäng komponent och ändra till "logga ut" knapp.
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.

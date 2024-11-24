@@ -10,6 +10,11 @@ type APIOptions = {
 
 type IncludeObj = {
     include: {
-    [key: string]: boolean
+        [key: string]: boolean
     }
+}
+
+type SessionObj = {
+    isAuth: boolean,
+    userId: string | null
 }

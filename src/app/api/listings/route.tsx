@@ -4,6 +4,7 @@ import { ListingData } from "@/types/listing"
 import { listingValidation } from "@/utils/validators/listingValidator"
 import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors"
 import { getVerifiedUserId } from "@/helpers/requestHelpers"
+import { verifySession } from "@/lib/dal"
 
 const prisma = new PrismaClient()
 
@@ -11,9 +12,8 @@ export async function POST(request: NextRequest) {
     try {
         const body: ListingData = await request.json()
 
-        // const userId = await getVerifiedUserId(request, prisma)
-        if(!body.createdById) throw new ValidationError("no createdById")
-        const userId = body.createdById 
+        //kan använda verifySession här också men jag orkar inte ändra nu
+        const userId = await getVerifiedUserId(request, prisma)
 
         const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
@@ -50,9 +50,48 @@ export async function POST(request: NextRequest) {
     )
 }
 
+
 export async function GET(request: NextRequest) {
     try {
-        const listings = await prisma.listing.findMany()
+
+        const searchParams = new URL(request.url).searchParams
+        const queries = ["q", "user", "with_"]
+        const [q, user, with_] = queries.map(q => searchParams.get(q))
+
+        let where: { [key: string]: any } = {}
+        let include: IncludeObj | {} = {}
+
+        if (q) {
+
+            where.name = {
+                contains: q,
+                mode: "insensitive",
+            }
+        }
+
+        //snyggar till sen, funkar iaf
+        if (user) {
+            where.createdById = user
+
+            if (with_) {
+                const { isAuth, userId } = await verifySession()
+
+                if (user === userId &&
+                    with_ === "bookings" &&
+                    isAuth) {
+
+                    include = {
+                        include: { bookings: true }
+                    }
+                }
+            }
+        }
+
+        const listings = await prisma.listing.findMany({
+            where,
+            ...include
+        })
+
         if (listings.length === 0) throw new NotFoundError("No listings found")
 
         return NextResponse.json(
