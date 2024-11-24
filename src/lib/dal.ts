@@ -33,7 +33,7 @@ export const getSafeUser = cache(async (): Promise<SafeUser | null> => {
     if (!session.userId) return null
 
     try {
-        const safeUser = await getUser(session.userId)
+        const safeUser = await getUser()
         return safeUser
 
     } catch (error) {

@@ -11,6 +11,7 @@ export default async function Home() {
     <div className="p-10">
       <main >
         <h1 className="text-lg pb-5">Listings</h1>
+        <LoginForm/>
         {
           listings && listings.map(listing => (
             <div key={listing.id}

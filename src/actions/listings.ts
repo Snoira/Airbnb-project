@@ -107,7 +107,8 @@ export async function updateListingById(id: string, formData: ListingFormData): 
         const res = await fetch(`${url}${id}`,
             {
                 method: "PUT",
-                body: JSON.stringify(formData)
+                body: JSON.stringify(formData),
+                credentials: 'include'
             }
         )
 
@@ -131,7 +132,8 @@ export async function deleteListingById(id: string) {
     try {
         const res = await fetch(`${url}${id}`,
             {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: 'include'
             }
         )
 
@@ -153,7 +155,8 @@ export async function bookListingById(id: string): Promise<Booking | null> {
     try {
         const res = await fetch(`${url}${id}/bookings`,
             {
-                method: "POST"
+                method: "POST",
+                credentials: 'include'
             }
         )
 

@@ -3,11 +3,14 @@ import { SafeUser } from "@/types/user"
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/users/me/`);
 
-export async function getUser(userId?: string): Promise<SafeUser | null> {
+export async function getUser(): Promise<SafeUser | null> {
     try {
         const res = await fetch(url,
             {
                 method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                  },
                 credentials: 'include'
             }
         )
