@@ -1,17 +1,23 @@
 import { getListings } from "@/actions/listings"
-import { RegisterForm } from "@/components/RegisterForm";
-import { LoginForm } from "@/components/LoginForm"
+import { AuthNav } from "@/components/AuthNav";
 import Link from "next/link";
-import { verifySession } from "@/lib/dal"
+import { verifySession, deleteCookie } from "@/lib/dal"
+import {useState} from "react"
 
 export default async function Home() {
-
   const listings = await getListings()
+  const { isAuth } = await verifySession()
+
+  const deleteHandler = async () => {
+    "use server"
+    await deleteCookie()
+  }
+
   return (
     <div className="p-10">
       <main >
         <h1 className="text-lg pb-5">Listings</h1>
-        <LoginForm/>
+        <AuthNav isAuth={isAuth} deleteHandler={deleteHandler} />
         {
           listings && listings.map(listing => (
             <div key={listing.id}

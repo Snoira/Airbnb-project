@@ -5,7 +5,11 @@ import { login } from "@/actions/auth";
 import { loginFormSchema } from "@/lib/definitions"
 import { UserLoginData } from "@/types/user";
 
-export function LoginForm() {
+type Props = {
+    setIsLogedin: React.Dispatch<React.SetStateAction<boolean>>;
+  }
+
+export function LoginForm({setIsLogedin}:Props) {
     const [formData, setFormData] = useState<UserLoginData>({
         email: "",
         password: ""
@@ -24,7 +28,7 @@ export function LoginForm() {
         try {
             await loginFormSchema.validate(formData, { abortEarly: false })
             await login(formData)
-            //extra funkis: om 201, Sstäng komponent och ändra till "logga ut" knapp.
+            setIsLogedin(true)
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
@@ -38,8 +42,7 @@ export function LoginForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit}
-            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
+        <form onSubmit={handleSubmit}>
             <div className="space-y-2">
                 <label htmlFor="email"
                     className="block text-sm font-medium text-gray-700"

@@ -1,16 +1,19 @@
 import { SafeUser } from "@/types/user"
+import { getCookie } from "@/lib/dal";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/users/me/`);
 
 export async function getUser(): Promise<SafeUser | null> {
     try {
+        const cookie = await getCookie()
+        
         const res = await fetch(url,
             {
                 method: "GET",
                 headers: {
-                    'Content-Type': 'application/json',
-                  },
+                    cookie: `${cookie}`
+                },
                 credentials: 'include'
             }
         )

@@ -4,8 +4,8 @@ const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/auth/`);
 
 export async function register(formData: UserRegistrationData) {
+
     try {
-        console.log("REGISTER FORMDATA", formData)
         const res = await fetch(`${url}register`, {
             method: "POST",
             body: JSON.stringify(formData)

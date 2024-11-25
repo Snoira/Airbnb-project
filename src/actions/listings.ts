@@ -1,6 +1,6 @@
 import { Listing, Booking } from "@prisma/client";
 import { ListingFormData, ListingWithBookings } from "@/types/listing";
-import { verifySession } from "@/lib/dal";
+import { verifySession, getCookie } from "@/lib/dal";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/listings/`);
@@ -32,11 +32,15 @@ export async function getListingsWithBookingsByUserId(q?: string): Promise<Listi
     try {
         const query = q ? `q=${q}&` : ""
         const { userId } = await verifySession()
+        const cookie = await getCookie()
 
         const res = await fetch(`${url}?${query}with_=bookings&user=${userId}`,
             {
                 method: "GET",
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    cookie: `${cookie}`
+                }
             }
         )
 
@@ -57,10 +61,15 @@ export async function getListingsWithBookingsByUserId(q?: string): Promise<Listi
 
 export async function createListing(formData: ListingFormData): Promise<Listing | null> {
     try {
+        const cookie = await getCookie()
+
         const res = await fetch(url, {
             method: "POST",
             body: JSON.stringify(formData),
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+                cookie: `${cookie}`
+            }
         })
 
         if (res.ok) {
@@ -104,11 +113,16 @@ export async function getListingById(id: string): Promise<Listing | null> {
 
 export async function updateListingById(id: string, formData: ListingFormData): Promise<Listing | null> {
     try {
+        const cookie = await getCookie()
+
         const res = await fetch(`${url}${id}`,
             {
                 method: "PUT",
                 body: JSON.stringify(formData),
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    cookie: `${cookie}`
+                }
             }
         )
 
@@ -130,10 +144,15 @@ export async function updateListingById(id: string, formData: ListingFormData): 
 
 export async function deleteListingById(id: string) {
     try {
+        const cookie = await getCookie()
+
         const res = await fetch(`${url}${id}`,
             {
                 method: "DELETE",
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    cookie: `${cookie}`
+                }
             }
         )
 
@@ -153,10 +172,15 @@ export async function deleteListingById(id: string) {
 
 export async function bookListingById(id: string): Promise<Booking | null> {
     try {
+        const cookie = await getCookie()
+
         const res = await fetch(`${url}${id}/bookings`,
             {
                 method: "POST",
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    cookie: `${cookie}`
+                }
             }
         )
 

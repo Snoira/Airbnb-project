@@ -5,7 +5,11 @@ import { register } from "@/actions/auth";
 import { registerFormSchema } from "@/lib/definitions"
 import { UserRegistrationData } from "@/types/user";
 
-export function RegisterForm() {
+type Props = {
+    setIsLogedin: React.Dispatch<React.SetStateAction<boolean>>;
+  }
+
+export function RegisterForm({setIsLogedin}: Props) {
     const [formData, setFormData] = useState<UserRegistrationData>({
         name: "",
         email: "",
@@ -25,6 +29,7 @@ export function RegisterForm() {
         try {
             await registerFormSchema.validate(formData, { abortEarly: false })
             await register(formData)
+            setIsLogedin(true)
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
@@ -38,8 +43,7 @@ export function RegisterForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit}
-            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
+        <form onSubmit={handleSubmit}>
             <div className="space-y-2">
                 <label htmlFor="name"
                     className="block text-sm font-medium text-gray-700">

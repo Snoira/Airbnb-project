@@ -1,14 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserById } from "@/utils/prisma";
-import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors";
-import { verifySession } from "@/lib/dal";
+import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors";
 
 const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
     try {
-        console.log("________________________ GET USER___")
         const userId = request.headers.get("userId")
         if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
 
