@@ -33,6 +33,7 @@ export async function encrypt(payload: JWTUserPayload): Promise<string> {
 export async function decrypt(token: string): Promise<JWTUserPayload | null> {
     try {
         const { payload } = await Jose.jwtVerify(token, encodedSecret)
+
         return payload as JWTUserPayload 
         
     } catch (error:any) {

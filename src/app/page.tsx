@@ -2,12 +2,12 @@ import { getListings } from "@/actions/listings"
 import { AuthNav } from "@/components/AuthNav";
 import Link from "next/link";
 import { verifySession, deleteCookie } from "@/lib/dal"
-import {useState} from "react"
 
 export default async function Home() {
   const listings = await getListings()
   const { isAuth } = await verifySession()
 
+  console.log('isAuth', isAuth);
   const deleteHandler = async () => {
     "use server"
     await deleteCookie()

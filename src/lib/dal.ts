@@ -1,3 +1,4 @@
+"use server"
 import { cookies } from 'next/headers'
 import { decrypt } from '@/utils/jwt'
 import { cache } from 'react';

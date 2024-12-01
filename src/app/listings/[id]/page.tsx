@@ -1,9 +1,11 @@
 import { getListingById } from "@/actions/listings"
+import { verifySession } from "@/lib/dal";
 
 export default async function Listing(options: APIOptions) {
     const id = options.params.id;
 
     const listing = await getListingById(id)
+    const {isAuth} = await verifySession()
 
     return (
         <div className="p-10">

@@ -27,8 +27,8 @@ export function LoginForm({setIsLogedin}:Props) {
         event.preventDefault()
         try {
             await loginFormSchema.validate(formData, { abortEarly: false })
-            await login(formData)
-            setIsLogedin(true)
+            const status = await login(formData)
+            if(status === 201)setIsLogedin(true)
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.

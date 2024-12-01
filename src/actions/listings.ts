@@ -1,3 +1,4 @@
+"use server"
 import { Listing, Booking } from "@prisma/client";
 import { ListingFormData, ListingWithBookings } from "@/types/listing";
 import { verifySession, getCookie } from "@/lib/dal";
@@ -32,7 +33,10 @@ export async function getListingsWithBookingsByUserId(q?: string): Promise<Listi
     try {
         const query = q ? `q=${q}&` : ""
         const { userId } = await verifySession()
+
         const cookie = await getCookie()
+
+        if(!cookie) throw new Error("Could not get cookie")
 
         const res = await fetch(`${url}?${query}with_=bookings&user=${userId}`,
             {
@@ -63,17 +67,20 @@ export async function createListing(formData: ListingFormData): Promise<Listing 
     try {
         const cookie = await getCookie()
 
+        if(!cookie) throw new Error("Could not get cookie")
+
         const res = await fetch(url, {
             method: "POST",
             body: JSON.stringify(formData),
-            credentials: 'include',
             headers: {
                 cookie: `${cookie}`
-            }
+            },
+            credentials: 'include'
         })
 
         if (res.ok) {
-            const data: Listing = await res.json()
+            const data = await res.json()
+            console.log("data", data)
             return data
         }
 
@@ -83,10 +90,9 @@ export async function createListing(formData: ListingFormData): Promise<Listing 
 
         throw new Error(`${res.status}`)
 
-    } catch (error) {
-        console.log(error)
+    } catch (error: any) {
+        console.log("Error createListing", error)
         return null
-
     }
 }
 
@@ -114,6 +120,7 @@ export async function getListingById(id: string): Promise<Listing | null> {
 export async function updateListingById(id: string, formData: ListingFormData): Promise<Listing | null> {
     try {
         const cookie = await getCookie()
+        if(!cookie) throw new Error("Could not get cookie")
 
         const res = await fetch(`${url}${id}`,
             {
@@ -145,6 +152,7 @@ export async function updateListingById(id: string, formData: ListingFormData): 
 export async function deleteListingById(id: string) {
     try {
         const cookie = await getCookie()
+        if(!cookie) throw new Error("Could not get cookie")
 
         const res = await fetch(`${url}${id}`,
             {
@@ -173,6 +181,7 @@ export async function deleteListingById(id: string) {
 export async function bookListingById(id: string): Promise<Booking | null> {
     try {
         const cookie = await getCookie()
+        if(!cookie) throw new Error("Could not get cookie")
 
         const res = await fetch(`${url}${id}/bookings`,
             {

@@ -26,8 +26,8 @@ export const listingFormSchema = Yup.object().shape({
     name: Yup.string()
         .max(500, 'Invalid email format')
         .required('Required'),
-    descriprion: Yup.string()
-        .min(500, 'Must be less than 500 characters')
+        description: Yup.string()
+        .max(500, 'Must be less than 500 characters')
         .required('Required'),
     location: Yup.string()
         .required('Required'),

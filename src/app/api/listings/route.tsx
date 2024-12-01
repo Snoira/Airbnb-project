@@ -10,13 +10,19 @@ const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
     try {
+        console.log("\n --CREATE LISTING-- \n")
         const body: ListingData = await request.json()
-
+        console.log("body", body)
         //kan använda verifySession här också men jag orkar inte ändra nu
         const userId = await getVerifiedUserId(request, prisma)
+        console.log("userid", userId)
 
         const [hasErrors, errorText] = listingValidation(body)
         if (hasErrors) throw new ValidationError(errorText)
+        
+        
+        if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight)
+        const reservedDates: Date[] = []
 
         const newListing = await prisma.listing.create({
             data: {
@@ -25,9 +31,11 @@ export async function POST(request: NextRequest) {
                 description: body.description,
                 location: body.location,
                 pricePerNight: body.pricePerNight,
-                reservedDates: body.reservedDates
+                reservedDates
             }
         })
+
+        console.log("new listing: ", newListing)
 
         return NextResponse.json(
             newListing,
@@ -42,12 +50,15 @@ export async function POST(request: NextRequest) {
                 { error: error.message },
                 { status: error.statusCode }
             )
-    }
 
-    return NextResponse.json(
-        { error: "Internal Server Error" },
-        { status: 500 }
-    )
+        console.error("Unexpected error in createListing:", error);
+
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        )
+
+    }
 }
 
 

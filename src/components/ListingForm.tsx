@@ -5,42 +5,52 @@ import { createListing } from "@/actions/listings";
 import { listingFormSchema } from "@/lib/definitions"
 import { ListingFormData } from "@/types/listing";
 
+const INIT_FORM_DATA = {
+    name: "",
+    description: "",
+    location: "",
+    pricePerNight: 0
+}
+
 export function ListingForm() {
-    const [formData, setFormData] = useState<ListingFormData>({
-        name: "",
-        description: "",
-        location: "",
-        pricePerNight: 0
-    })
+
+    const [formData, setFormData] = useState<ListingFormData>(INIT_FORM_DATA)
+
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = event.target;
+        const { name, value, type } = event.target;
+
         setFormData({
             ...formData,
-            [name]: value
+            [name]: type === "number" ? parseFloat(value) : value,
         })
     }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         try {
+            console.log("price per night type: ", (typeof formData.pricePerNight));
             await listingFormSchema.validate(formData, { abortEarly: false })
+
             const listing = await createListing(formData)
+            if (listing) setFormData(INIT_FORM_DATA)
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
-            if( error instanceof Yup.ValidationError) {
-                const errors = (error.inner.map((err)=> {
-                    return( `${err.path}: ${err.message}`)
+            if (error instanceof Yup.ValidationError) {
+                const errors = (error.inner.map((err) => {
+                    return (`${err.path}: ${err.message}`)
                 }))
                 console.log(errors.join(", "))
             }
+            console.log("ERROR", error)
         }
     }
 
     return (
         <form onSubmit={handleSubmit}
             className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
+            <h1> CREATE LISTING</h1>
             <div className="space-y-2">
                 <label htmlFor="listingName"
                     className="block text-sm font-medium text-gray-700">

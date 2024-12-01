@@ -28,8 +28,9 @@ export function RegisterForm({setIsLogedin}: Props) {
         event.preventDefault()
         try {
             await registerFormSchema.validate(formData, { abortEarly: false })
-            await register(formData)
-            setIsLogedin(true)
+            const status = await register(formData)
+
+            if(status === 201) setIsLogedin(true)
 
         } catch (error) {
             // återkommer med bättre errorhantering, form som ger feedback.
@@ -37,7 +38,7 @@ export function RegisterForm({setIsLogedin}: Props) {
                 const errors = (error.inner.map((err)=> {
                     return( `${err.path}: ${err.message}`)
                 }))
-                console.log(errors.join(", "))
+                console.log("REGISTRATIONFORM ERROR", errors.join(", "))
             }
         }
     }

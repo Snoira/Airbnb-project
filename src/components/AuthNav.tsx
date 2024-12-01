@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { LoginForm } from "./LoginForm"
 import { RegisterForm } from "./RegisterForm"
 
@@ -12,10 +12,6 @@ type Props = {
 export function AuthNav({ isAuth, deleteHandler }: Props) {
   const [isLogedin, setIsLogedin] = useState<boolean>(isAuth)
   const [isRegistered, setIsRegistered] = useState<boolean>(isAuth)
-
-  // useEffect(() => {
-  //  deleteHandler()
-  // }, [isAuth])
 
   return (
     <>

@@ -7,6 +7,9 @@ const url = new URL(`${BASE_URL}api/users/me/`);
 export async function getUser(): Promise<SafeUser | null> {
     try {
         const cookie = await getCookie()
+
+        if(!cookie) throw new Error("Could not get cookie in getUser")
+
         
         const res = await fetch(url,
             {

@@ -1,17 +1,16 @@
 import { getListingsWithBookingsByUserId } from "@/actions/listings"
-import {getSafeUser} from "@/lib/dal"
+import { getSafeUser } from "@/lib/dal"
+import { ListingForm } from "@/components/ListingForm"
 
 export default async function Dashboard() {
     const listings = await getListingsWithBookingsByUserId()
     const user = await getSafeUser()
 
+
     return (
         <div>
-            <h1>
-                DASHBOARD
-            </h1>
-            <h2>HEJ {user?.name} </h2>
-            <p>CREATE LISTING</p>
+            <h2>Welcome back {user?.name}! </h2>
+            <ListingForm />
             <p>YOUR LISTINGS</p>
             {
                 listings && listings.map(listing => (

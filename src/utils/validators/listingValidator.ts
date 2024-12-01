@@ -7,7 +7,6 @@ export function listingValidation(data: ListingData): [boolean, string] {
     if (!data.description) errors.push("Description")
     if (!data.location) errors.push("Location")
     if (!data.pricePerNight) errors.push("Price per night")
-    if (!data.reservedDates) errors.push("Reserved Dates")
 
     const hasErrors = errors.length !== 0
     const errorText: string = (errors.join(", ")+" is required")
