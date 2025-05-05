@@ -2,7 +2,7 @@ import { getListingsWithBookingsByUserId } from "@/actions/listings";
 import { ListingForm } from "@/components/ListingForm";
 import Link from "next/link";
 export default async function Dashboard() {
-  // const listings = await getListingsWithBookingsByUserId();
+  const listings = await getListingsWithBookingsByUserId();
 
   return (
     <div>
@@ -13,7 +13,7 @@ export default async function Dashboard() {
       <ListingForm />
 
       <p>YOUR LISTINGS</p>
-      {/* {listings &&
+      {listings &&
         listings.map((listing) => (
           <Link href={`/${listing.id}`}>
             <div key={listing.id} className="pb-3">
@@ -21,7 +21,7 @@ export default async function Dashboard() {
               <p>{listing.location}</p>
             </div>
           </Link>
-        ))} */}
+        ))}
     </div>
   );
 }

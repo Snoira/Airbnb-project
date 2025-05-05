@@ -8,7 +8,10 @@ import {
   DatabaseError,
   ForbiddenError,
 } from "@/utils/errors";
-import { getVerifiedUserId } from "@/helpers/requestHelpers";
+// import { getVerifiedUserId } from "@/helpers/requestHelpers";
+import { getJWTFromCookie } from "@/utils/jwt";
+import { decrypt } from "@/utils/jwt";
+import { getUserById } from "@/utils/prisma";
 
 type IncludeObj = {
   include: {
@@ -18,54 +21,54 @@ type IncludeObj = {
 
 const prisma = new PrismaClient();
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log("\n --CREATE LISTING-- \n");
-    const body: ListingData = await request.json();
-    console.log("body", body);
-    //kan använda verifySession här också men jag orkar inte ändra nu
-    const userId = await getVerifiedUserId(request, prisma);
-    console.log("userid", userId);
+// export async function POST(request: NextRequest) {
+//   try {
+//     console.log("\n --CREATE LISTING-- \n");
+//     const body: ListingData = await request.json();
+//     console.log("body", body);
+//     //kan använda verifySession här också men jag orkar inte ändra nu
+//     // const userId = await getVerifiedUserId(request, prisma);
+//     console.log("userid", userId);
 
-    const [hasErrors, errorText] = listingValidation(body);
-    if (hasErrors) throw new ValidationError(errorText);
+//     const [hasErrors, errorText] = listingValidation(body);
+//     if (hasErrors) throw new ValidationError(errorText);
 
-    if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
-    const reservedDates: Date[] = [];
+//     if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
+//     const reservedDates: Date[] = [];
 
-    const newListing = await prisma.listing.create({
-      data: {
-        name: body.name,
-        createdById: userId,
-        description: body.description,
-        location: body.location,
-        pricePerNight: body.pricePerNight,
-        reservedDates,
-      },
-    });
+//     const newListing = await prisma.listing.create({
+//       data: {
+//         name: body.name,
+//         createdById: userId,
+//         description: body.description,
+//         location: body.location,
+//         pricePerNight: body.pricePerNight,
+//         reservedDates,
+//       },
+//     });
 
-    console.log("new listing: ", newListing);
+//     console.log("new listing: ", newListing);
 
-    return NextResponse.json(newListing, { status: 201 });
-  } catch (error: any) {
-    if (
-      error instanceof ValidationError ||
-      error instanceof NotFoundError ||
-      error instanceof DatabaseError
-    )
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
-      );
+//     return NextResponse.json(newListing, { status: 201 });
+//   } catch (error: any) {
+//     if (
+//       error instanceof ValidationError ||
+//       error instanceof NotFoundError ||
+//       error instanceof DatabaseError
+//     )
+//       return NextResponse.json(
+//         { error: error.message },
+//         { status: error.statusCode }
+//       );
 
-    console.error("Unexpected error in createListing:", error);
+//     console.error("Unexpected error in createListing:", error);
 
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       { error: "Internal Server Error" },
+//       { status: 500 }
+//     );
+//   }
+// }
 
 export async function GET(request: NextRequest) {
   console.log("\n --GET LISTINGS-- \n");
@@ -84,14 +87,17 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    //snyggar till sen, funkar iaf
+    const JWT = request.headers.get("Authorization")?.split(" ")[1];
+    const sessionData = await decrypt(JWT);
+    const userId = sessionData?.id ?? null;
+
     if (user && with_ === "bookings") {
-      const userId = await getVerifiedUserId(request, prisma);
+      //BORT REQ
 
-      if (userId !== user)
-        throw new ForbiddenError("User does not match request");
+      if (!userId) throw new ForbiddenError("User does not match request");
+      const validatedUserId = await getUserById(userId, prisma);
 
-      where.createdById = user;
+      where.createdById = validatedUserId;
       include = {
         include: { bookings: true },
       };

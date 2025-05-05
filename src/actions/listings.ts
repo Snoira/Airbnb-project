@@ -2,62 +2,47 @@
 import { Listing, Booking } from "@prisma/client";
 import { ListingFormData, ListingWithBookings } from "@/types/listing";
 import { cookies } from "next/headers";
-import { decrypt } from "@/utils/jwt";
+import { getJWTFromCookie, decrypt } from "@/utils/jwt";
+import { PrismaClient } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { getUserById } from "@/utils/prisma";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
-const url = new URL(`${BASE_URL}api/listings/`);
+const url = "/api/listings";
+const prisma = new PrismaClient();
 
-export async function getListings(q?: string): Promise<Listing[] | null> {
+export async function getListings(): Promise<Listing[] | null> {
   try {
-    const query = q ? `?q=${q}` : "";
-
-    const res = await fetch(`${url}${query}`, { method: "GET" });
-
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
-
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
+    const listings = await prisma.listing.findMany();
+    return listings;
   } catch (error) {
     console.log("could not fetch listing", error);
-    return null;
+    return [];
   }
 }
 
-export async function getListingsWithBookingsByUserId(
-  q?: string
-): Promise<ListingWithBookings[] | null> {
+export async function getListingsWithBookingsByUserId() {
+  console.log("\n --GET LISTINGS W BOOKINGS AND USERID-- \n");
+
+  const JWT = await getJWTFromCookie();
+  const sessionData = await decrypt(JWT);
+  const userId = sessionData?.id ?? null;
+
+  if (!userId) return redirect("/");
+  const validatedUser = await getUserById(userId, prisma);
+
   try {
-    const query = q ? `q=${q}&` : "";
-
-    const cookieStore = cookies();
-    const session = cookieStore.get("session");
-    const JWT = await decrypt(session?.value);
-    if (!JWT) throw new Error("Could not get JWT");
-    const { id: userId } = JWT;
-
-    const res = await fetch(`${url}?${query}with_=bookings&user=${userId}`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${JWT}`,
+    const listings = await prisma.listing.findMany({
+      where: {
+        createdById: validatedUser.id,
+      },
+      include: {
+        bookings: true,
       },
     });
-
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
-
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
+    return listings;
   } catch (error) {
     console.log("could not fetch listing", error);
-    return null;
+    return [];
   }
 }
 
@@ -102,7 +87,7 @@ export async function createListing(
 
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
-    const res = await fetch(`${url}${id}`, { method: "GET" });
+    const res = await fetch(`${url}/${id}`, { method: "GET" });
 
     if (res.ok) {
       const data = await res.json();
@@ -127,7 +112,7 @@ export async function updateListingById(
     const session = cookieStore.get("session");
     const JWT = await decrypt(session?.value);
 
-    const res = await fetch(`${url}${id}`, {
+    const res = await fetch(`${url}/${id}`, {
       method: "PUT",
       body: JSON.stringify(formData),
       credentials: "include",
@@ -159,7 +144,7 @@ export async function deleteListingById(id: string) {
 
     if (!JWT) throw new Error("Could not get JWT");
 
-    const res = await fetch(`${url}${id}`, {
+    const res = await fetch(`${url}/${id}`, {
       method: "DELETE",
       credentials: "include",
       headers: {
@@ -187,7 +172,7 @@ export async function bookListingById(id: string): Promise<Booking | null> {
     const JWT = await decrypt(session?.value);
     if (!JWT) throw new Error("Could not get JWT");
 
-    const res = await fetch(`${url}${id}/bookings`, {
+    const res = await fetch(`${url}/${id}/bookings`, {
       method: "POST",
       credentials: "include",
       headers: {

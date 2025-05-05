@@ -95,15 +95,15 @@ export async function createSession(user: SafeUser): Promise<string> {
   return encryptedSession;
 }
 
-export async function deleteSession(): Promise<void> {
+export async function deleteSession() {
   const cookieStore = cookies();
   cookieStore.delete("session");
 }
 
-const getJWTFromCookie = async (): Promise<string | null> => {
+export const getJWTFromCookie = async () => {
   const cookieStore = cookies();
   const session = cookieStore.get("session");
-  return session?.value ?? null;
+  return session?.value;
 };
 
 export const checkAuth = async (): Promise<boolean> => {
