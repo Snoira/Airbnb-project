@@ -16,10 +16,11 @@ export default async function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.includes(path);
   // const isPublicRoute = publicRoutes.includes(path)
 
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const JWT = cookieStore.get("session")?.value;
+  console.log("JWT: ", JWT);
   const sessionData = await decrypt(JWT);
-
+  console.log("SESSIONDATA: ", sessionData);
   if (isProtectedRoute) {
     try {
       console.log("\n --------------PROTECTED--------------");
@@ -50,5 +51,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

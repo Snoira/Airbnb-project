@@ -24,8 +24,13 @@ export function LoginForm() {
     event.preventDefault();
     try {
       await loginFormSchema.validate(formData, { abortEarly: false });
-      await login(formData);
-      console.log("loggedin");
+      const { success } = await login(formData);
+      if (success) {
+        console.log("funkar");
+        router.push("/dashboard");
+      } else {
+        console.log("funkar inte");
+      }
     } catch (error) {
       // återkommer med bättre errorhantering, form som ger feedback.
       if (error instanceof Yup.ValidationError) {

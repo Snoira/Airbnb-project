@@ -1,5 +1,5 @@
 import { getListingById } from "@/actions/listings";
-import { verifySession } from "@/lib/definitions";
+import { checkAuth } from "@/utils/jwt";
 
 type APIOptions = {
   params: {
@@ -11,7 +11,7 @@ export default async function Listing(options: APIOptions) {
   const id = options.params.id;
 
   const listing = await getListingById(id);
-  const isAuth = await verifySession();
+  const isAuth = await checkAuth();
   console.log("-------isAuth details page", isAuth);
 
   return (

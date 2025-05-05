@@ -12,9 +12,6 @@ import { PrismaClient, User } from "@prisma/client";
 import { createSession } from "@/utils/jwt";
 import { redirect } from "next/navigation";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000/";
-const url = new URL(`${BASE_URL}api/auth/`);
-
 const prisma = new PrismaClient();
 
 // export async function register(
@@ -37,7 +34,7 @@ const prisma = new PrismaClient();
 // }
 
 export async function register(formData: UserRegistrationData) {
-  const [hasErrors, errorText] = await registrationValidation(formData);
+  const [hasErrors, errorText] = registrationValidation(formData);
   if (hasErrors) console.error(errorText);
 
   const isRegistered = await getUserByEmail(
@@ -60,7 +57,7 @@ export async function register(formData: UserRegistrationData) {
     const { password, ...safeUser } = newUser;
 
     await createSession(safeUser);
-    redirect("/");
+    redirect("/dashboard");
   } catch (error: any) {
     console.error("register user error ", error);
     return null;
@@ -71,9 +68,8 @@ export async function login(formData: UserLoginData) {
   const [hasErrors, errors] = loginValidation(formData);
   if (hasErrors) {
     console.log(errors);
-    return;
+    return { success: false };
   }
-
   const user = await getUserByEmail(formData.email.toLowerCase(), prisma);
   if (!user)
     throw new ValidationError(`Could not find user with matching credentials`);
@@ -87,8 +83,13 @@ export async function login(formData: UserLoginData) {
   }
 
   const { password, ...safeUser } = user;
-  await createSession(safeUser);
-  redirect("/dashboard");
+  try {
+    await createSession(safeUser);
+    return { success: true };
+  } catch (error: any) {
+    console.error("login user error ", error);
+    return { success: false };
+  }
 }
 
 // export async function login(formData: UserLoginData): Promise<number> {

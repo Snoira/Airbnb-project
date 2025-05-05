@@ -16,8 +16,8 @@ type JWTUserPayload = {
 };
 
 type SessionData = {
-  user: SafeUser;
-  expiresAt: Date;
+  id: string;
+  role: string;
 };
 
 const secret: string = process.env.JWT_SECRET ?? "secret";
@@ -81,7 +81,7 @@ export async function decrypt(
 
 export async function createSession(user: SafeUser): Promise<string> {
   const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000);
-  const sessionData = { user, expiresAt };
+  const sessionData = { id: user.id, role: user.role };
   const encryptedSession = await encrypt(sessionData); // Kryptera sessionData- bättre att kalla token?
 
   const cookieStore = cookies(); // Hämta cookieStore

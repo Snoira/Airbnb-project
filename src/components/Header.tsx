@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { AuthNav } from "./AuthNav";
-import { verifySession, deleteCookie } from "@/lib/definitions";
-
+import { checkAuth, deleteSession } from "@/utils/jwt";
 export default async function Header() {
-  const isAuth = await verifySession();
+  const isAuth = await checkAuth();
 
   const deleteHandler = async () => {
     "use server";
-    await deleteCookie();
+    await deleteSession();
   };
 
   return (
