@@ -1,3 +1,4 @@
+import { ListingForm } from "@/components/ListingForm"
 import { Prisma, Listing } from "@prisma/client"
 
 type ListingData = Pick<Listing, "name" | "description" | "location" | "pricePerNight" |"createdById">

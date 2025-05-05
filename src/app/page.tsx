@@ -1,38 +1,53 @@
-import { getListings } from "@/actions/listings"
+import { getListings } from "@/actions/listings";
 import { AuthNav } from "@/components/AuthNav";
 import Link from "next/link";
-import { verifySession, deleteCookie } from "@/lib/dal"
-
+import { verifySession, deleteCookie } from "@/lib/dal";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 export default async function Home() {
-  const listings = await getListings()
-  const { isAuth } = await verifySession()
+  const listings = await getListings();
+  const isAuth = await verifySession();
 
-  console.log('isAuth', isAuth);
+  console.log("\n!!!listings", listings, "\n");
+
+  console.log("-------isAuth", isAuth);
   const deleteHandler = async () => {
-    "use server"
-    await deleteCookie()
-  }
+    "use server";
+    await deleteCookie();
+  };
 
   return (
-    <div className="p-10">
-      <main >
-        <h1 className="text-lg pb-5">Listings</h1>
-        <AuthNav isAuth={isAuth} deleteHandler={deleteHandler} />
-        {
-          listings && listings.map(listing => (
-            <div key={listing.id}
-              className="pb-3">
-              <Link href={`/listings/${listing.id}`}>
-                <h3 className="text-md font-semibold">{listing.name}</h3>
-                <p>{listing.location}</p>
-                <p>{listing.pricePerNight} kr</p>
+    <>
+      <main>
+        <div className="mt-16 flex flex-wrap gap-6 justify-center border-t border-stone-200 pt-10 sm:pt-16">
+          {listings &&
+            listings.map((listing) => (
+              <Link key={listing.id} href={`/listings/${listing.id}`}>
+                <Card className="w-[350px]">
+                  <div>
+                    <CardHeader>
+                      <Skeleton className="h-[300px] w-[300px] rounded-xl" />
+                      <CardTitle>{listing.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription>
+                        <p>{listing.location}</p>
+                        <p>{listing.pricePerNight} kr</p>
+                      </CardDescription>
+                    </CardContent>
+                  </div>
+                </Card>
               </Link>
-            </div>
-          ))
-        }
+            ))}
+        </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-      </footer>
-    </div>
-  )
+      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
+    </>
+  );
 }

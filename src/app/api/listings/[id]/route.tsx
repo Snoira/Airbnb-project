@@ -1,140 +1,145 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { ListingData, ListingWithBookings } from "@/types/listing";
-import { listingValidation } from "@/utils/validators/listingValidator"
-import { ValidationError, NotFoundError, DatabaseError, ForbiddenError } from "@/utils/errors"
-import { checkAdmin, deleteBookingById, getListingById } from "@/utils/prisma"
-import { getVerifiedUserId } from "@/helpers/requestHelpers"
+import { listingValidation } from "@/utils/validators/listingValidator";
+import {
+  ValidationError,
+  NotFoundError,
+  DatabaseError,
+  ForbiddenError,
+} from "@/utils/errors";
+import { checkAdmin, deleteBookingById, getListingById } from "@/utils/prisma";
+import { getVerifiedUserId } from "@/helpers/requestHelpers";
 
-const prisma = new PrismaClient
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest, options: APIOptions) {
-    const id = options.params.id
-    if (!id) throw new ValidationError("Failed to retrive id")
+  const id = options.params.id;
+  if (!id) throw new ValidationError("Failed to retrive id");
+  console.log("___________________ \n GET LISTING BY ID \n___________________");
 
-    try {
-        const listing = await getListingById(id, prisma)
+  try {
+    const listing = await getListingById(id, prisma);
 
-        return NextResponse.json(
-            listing,
-            { status: 200 }
-        )
-    }
-    catch (error: any) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof DatabaseError)
-            return NextResponse.json(
-                { error: error.message },
-                { status: error.statusCode }
-            )
-        return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 }
-        )
-    }
+    return NextResponse.json(listing, { status: 200 });
+  } catch (error: any) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof NotFoundError ||
+      error instanceof DatabaseError
+    )
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(request: NextRequest, options: APIOptions) {
-    try {
-        const id = options.params.id
-        if (!id) throw new ValidationError("Failed to retrive id")
+  try {
+    const id = options.params.id;
+    if (!id) throw new ValidationError("Failed to retrive id");
 
-            // const userId = await getVerifiedUserId(request, prisma)
-            
-            const body: ListingData = await request.json()
-            const [hasErrors, errorText] = listingValidation(body)
-        if (hasErrors) throw new ValidationError(errorText)
+    // const userId = await getVerifiedUserId(request, prisma)
 
-            if(!body.createdById) throw new ValidationError("no userId")
-                const userId = body.createdById
+    const body: ListingData = await request.json();
+    const [hasErrors, errorText] = listingValidation(body);
+    if (hasErrors) throw new ValidationError(errorText);
 
-        //använda checkListing istället?
-        const listing = await getListingById(id, prisma)
-        // if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
+    if (!body.createdById) throw new ValidationError("no userId");
+    const userId = body.createdById;
 
-        const updatedListing = await prisma.listing.update({
-            where: {
-                id
-            },
-            data: {
-                name: body.name,
-                description: body.description,
-                location: body.location,
-                pricePerNight: body.pricePerNight,
-                reservedDates: body.reservedDates
-            }
-        })
+    //använda checkListing istället?
+    const listing = await getListingById(id, prisma);
+    // if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
 
-        return NextResponse.json(
-            updatedListing,
-            { status: 200 }
-        )
+    const updatedListing = await prisma.listing.update({
+      where: {
+        id,
+      },
+      data: {
+        name: body.name,
+        description: body.description,
+        location: body.location,
+        pricePerNight: body.pricePerNight,
+        // reservedDates: body.reservedDates,
+      },
+    });
 
-    } catch (error: any) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof ForbiddenError ||
-            error instanceof DatabaseError)
-            return NextResponse.json(
-                { error: error.message },
-                { status: error.statusCode }
-            )
+    return NextResponse.json(updatedListing, { status: 200 });
+  } catch (error: any) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof NotFoundError ||
+      error instanceof ForbiddenError ||
+      error instanceof DatabaseError
+    )
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
 
-        return NextResponse.json(
-            { error: "Internal Server Erroro" },
-            { status: 500 }
-        )
-    }
+    return NextResponse.json(
+      { error: "Internal Server Erroro" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: NextRequest, options: APIOptions) {
-    try {
-        //Ska kunna raderas oavsett skapare om användare är admin
-        const id = options.params.id
-        if (!id) throw new ValidationError("Failed to retrive id")
+  try {
+    //Ska kunna raderas oavsett skapare om användare är admin
+    const id = options.params.id;
+    if (!id) throw new ValidationError("Failed to retrive id");
 
-        // const userId = await getVerifiedUserId(request, prisma)
-        const body = await request.json()
-        const userId = body.createdById
+    // const userId = await getVerifiedUserId(request, prisma)
+    const body = await request.json();
+    const userId = body.createdById;
 
-        const includeField = "bookings"
-        const listing = await getListingById(id, prisma, includeField)
+    const includeField = "bookings";
+    const listing = await getListingById(id, prisma, includeField);
 
-        if (listing.createdById !== userId) {
-            //finns kanske bättre sätt att lösa? middleware typ?
-            const isAdmin = await checkAdmin(userId, prisma)
-            if (!isAdmin) throw new ForbiddenError("You do not have permission to delete this listing")
-        }
-
-        // cascade prisma
-        // if (listing.bookings?.length > 0) {
-        //     const promises = listing.bookings.map((booking) => {
-        //         return deleteBookingById(booking.id, prisma)
-        //     })
-        //     await Promise.all(promises)
-        // }
-
-        await deleteBookingById(id, prisma)
-
-        return new NextResponse(null, { status: 204 })
-
-    } catch (error: any) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof ForbiddenError ||
-            error instanceof DatabaseError
-        ) {
-            return NextResponse.json(
-                { error: error.message },
-                { status: error.statusCode }
-            )
-        }
-        return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 }
-        )
+    if (listing.createdById !== userId) {
+      //finns kanske bättre sätt att lösa? middleware typ?
+      const isAdmin = await checkAdmin(userId, prisma);
+      if (!isAdmin)
+        throw new ForbiddenError(
+          "You do not have permission to delete this listing"
+        );
     }
+
+    // cascade prisma
+    // if (listing.bookings?.length > 0) {
+    //     const promises = listing.bookings.map((booking) => {
+    //         return deleteBookingById(booking.id, prisma)
+    //     })
+    //     await Promise.all(promises)
+    // }
+
+    await deleteBookingById(id, prisma);
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error: any) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof NotFoundError ||
+      error instanceof ForbiddenError ||
+      error instanceof DatabaseError
+    ) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    }
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 //annan fil? api/listings/:id/book eller liknande?
 // export async function POST(request: NextRequest, options: APIOptions) {

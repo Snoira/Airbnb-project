@@ -1,20 +1,27 @@
+import { SafeUser } from "./user";
+
 type ErrorObject = {
-    [key: string]: any
-}
+  [key: string]: any;
+};
 
 type APIOptions = {
-    params: {
-        [key: string]: string
-    }
-}
+  params: {
+    [key: string]: string;
+  };
+};
 
 type IncludeObj = {
-    include: {
-        [key: string]: boolean
-    }
-}
+  include: {
+    [key: string]: boolean;
+  };
+};
 
 type SessionObj = {
-    isAuth: boolean,
-    userId: string | null
-}
+  isAuth: boolean;
+  user: SafeUser | null;
+};
+
+type SessionToken = {
+  token: string;
+  expiresAt: Date;
+};

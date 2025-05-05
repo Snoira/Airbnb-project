@@ -1,6 +1,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -47,7 +48,7 @@ createdAt       DateTime   @default(now())
 checkin_date    DateTime
 checkout_date   DateTime
 total_cost      Float
-status          Status     @default(pending)
+status          Status     @default(PENDING)
 }
 
 enum Role {
@@ -56,9 +57,9 @@ enum Role {
 }
 
 enum Status {
-  pending
-  accepted
-  denied
+  PENDING
+  ACCEPTED
+  DENIED
 }
  
  

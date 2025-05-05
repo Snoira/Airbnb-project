@@ -1,34 +1,35 @@
 import { PrismaClient } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { NextApiResponse } from "next";
 import { getUserById } from "@/utils/prisma";
-import { ValidationError, NotFoundError, DatabaseError } from "@/utils/errors";
+import {
+  ValidationError,
+  NotFoundError,
+  DatabaseError,
+  ForbiddenError,
+} from "@/utils/errors";
+import { cookies } from "next/headers";
+import { decrypt } from "@/utils/jwt";
+const prisma = new PrismaClient();
 
-const prisma = new PrismaClient()
+export async function GET(response: NextApiResponse) {
+  try {
+    const cookieStore = cookies();
+    const JWT = cookieStore.get("session")?.value;
+    const sessionData = await decrypt(JWT);
 
-export async function GET(request: NextRequest) {
-    try {
-        const userId = request.headers.get("userId")
-        if (!userId) throw new ValidationError("Failed to retrieve userId from headers")
+    if (!sessionData?.id) throw new ForbiddenError("User is not authenticated");
 
-        const user = await getUserById(userId, prisma)
+    const user = await getUserById(sessionData.id, prisma);
 
-        const safeUser = {
-            ...user,
-            password: undefined
-        }
+    const { password, ...safeUser } = user;
 
-        return NextResponse.json(
-            safeUser,
-            { status: 200 }
-        )
-
-    } catch (error: any) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof DatabaseError)
-            return NextResponse.json(
-                { error: error.message },
-                { status: error.statusCode }
-            )
-    }
+    return response.json({ status: 200, user: safeUser });
+  } catch (error: any) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof NotFoundError ||
+      error instanceof DatabaseError
+    )
+      return response.json({ error: error.message, status: error.statusCode });
+  }
 }

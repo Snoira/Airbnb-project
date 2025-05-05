@@ -1,37 +1,28 @@
-"use client"
-
-import { useState } from "react"
-import { LoginForm } from "./LoginForm"
-import { RegisterForm } from "./RegisterForm"
+"use client";
+import { useRouter } from "next/navigation";
 
 type Props = {
-  isAuth: boolean,
-  deleteHandler: () => {}
-}
-
+  isAuth: boolean;
+  deleteHandler: () => Promise<void>;
+};
 export function AuthNav({ isAuth, deleteHandler }: Props) {
-  const [isLogedin, setIsLogedin] = useState<boolean>(isAuth)
-  const [isRegistered, setIsRegistered] = useState<boolean>(isAuth)
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await deleteHandler();
+  };
+
+  const handleLogin = () => {
+    router.push("/signIn");
+  };
 
   return (
     <>
-      {isLogedin ?
-        <button
-          onClick={() => { deleteHandler(); setIsLogedin(false) }}
-        >Log out</button> :
-        <div
-          className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md space-y-6">
-          {isRegistered ?
-            <LoginForm setIsLogedin={setIsLogedin} /> :
-            <RegisterForm setIsLogedin={setIsLogedin} />}
-
-          <button
-            onClick={() => setIsRegistered(!isRegistered)}>
-            {isRegistered ?
-              "Create a new account" :
-              "I already have an account"}</button>
-        </div>}
+      {isAuth ? (
+        <button onClick={handleLogout}>Log out</button>
+      ) : (
+        <button onClick={handleLogin}>Sign in</button>
+      )}
     </>
-  )
-
+  );
 }

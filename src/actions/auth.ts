@@ -1,42 +1,108 @@
-import { UserRegistrationData, UserLoginData } from "@/types/user";
+"use server";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
+import { UserRegistrationData, UserLoginData } from "@/types/user";
+import {
+  loginValidation,
+  registrationValidation,
+} from "@/utils/validators/userValidator";
+import { getUserByEmail } from "@/utils/prisma";
+import { ValidationError } from "@/utils/errors";
+import bcrypt from "bcryptjs";
+import { PrismaClient, User } from "@prisma/client";
+import { createSession } from "@/utils/jwt";
+import { redirect } from "next/navigation";
+
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000/";
 const url = new URL(`${BASE_URL}api/auth/`);
 
-export async function register(formData: UserRegistrationData): Promise<number> {
-    try {
+const prisma = new PrismaClient();
 
-        const res = await fetch(`${url}register`, {
-            method: "POST",
-            body: JSON.stringify(formData)
-        })
+// export async function register(
+//   formData: UserRegistrationData
+// ): Promise<number> {
+//   try {
+//     const res = await fetch(`${url}register`, {
+//       method: "POST",
+//       body: JSON.stringify(formData),
+//     });
 
-        if (res.ok) {
-            return res.status
-        }
+//     if (res.ok) {
+//       return res.status;
+//     }
 
-        return res.status
+//     return res.status;
+//   } catch (error: any) {
+//     throw new Error(error);
+//   }
+// }
 
-    } catch (error: any) {
-        throw new Error(error)
-    }
+export async function register(formData: UserRegistrationData) {
+  const [hasErrors, errorText] = await registrationValidation(formData);
+  if (hasErrors) console.error(errorText);
+
+  const isRegistered = await getUserByEmail(
+    formData.email.toLowerCase(),
+    prisma
+  );
+  if (isRegistered) console.error(`User already exists`);
+
+  const newPassword: string = await bcrypt.hash(formData.password, 10);
+
+  try {
+    const newUser: User = await prisma.user.create({
+      data: {
+        email: formData.email.toLowerCase(),
+        password: newPassword,
+        name: formData.name,
+      },
+    });
+
+    const { password, ...safeUser } = newUser;
+
+    await createSession(safeUser);
+    redirect("/");
+  } catch (error: any) {
+    console.error("register user error ", error);
+    return null;
+  }
 }
 
-export async function login(formData: UserLoginData): Promise<number> {
-    try {
-        
-        const res = await fetch(`${url}login`, {
-            method: "POST",
-            body: JSON.stringify(formData)
-        })
+export async function login(formData: UserLoginData) {
+  const [hasErrors, errors] = loginValidation(formData);
+  if (hasErrors) {
+    console.log(errors);
+    return;
+  }
 
-        if (res.ok) {
-            return res.status
-        }
+  const user = await getUserByEmail(formData.email.toLowerCase(), prisma);
+  if (!user)
+    throw new ValidationError(`Could not find user with matching credentials`);
 
-        return res.status
+  const isPasswordMatch = await bcrypt.compare(
+    formData.password,
+    user.password
+  );
+  if (!isPasswordMatch) {
+    throw new ValidationError(`Could not find user with matching credentials`);
+  }
 
-    } catch (error: any) {
-        throw new Error(error)
-    }
+  const { password, ...safeUser } = user;
+  await createSession(safeUser);
+  redirect("/dashboard");
 }
+
+// export async function login(formData: UserLoginData): Promise<number> {
+//   try {
+//     const res = await fetch(`${url}login`, {
+//       method: "POST",
+//       body: JSON.stringify(formData),
+//     });
+
+//     if (res.ok) {
+//       return res.status;
+//     }
+//     return res.status;
+//   } catch (error: any) {
+//     throw new Error(error);
+//   }
+// }

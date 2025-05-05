@@ -1,88 +1,54 @@
-import { NextRequest, NextResponse } from "next/server"
-import { decrypt } from "@/utils/jwt"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from "next/server";
+import { decrypt } from "@/utils/jwt";
+import { cookies } from "next/headers";
 
-const protectedRoutes = [
-  "/dashboard",
-  "/api/users/me",
-  "/api/listings",
-  "/api/listings/:id*",
-  "/api/bookngs/:id*"
-]
-// const publicRoutes = ["/", "/api/auth/login", "/api/auth/register"]
-const protectedMethods = ["POST", "PUT", "PATCH", "DELETE"]
+const protectedRoutes = ["/dashboard"];
+const signInRoute = "/signIn";
 
 export default async function middleware(request: NextRequest) {
+  console.log("\n \n \n --------------MIDDLEWARE--------------");
 
-  console.log("\n \n \n --------------MIDDLEWARE--------------")
+  const path = request.nextUrl.pathname;
+  const method = request.method;
 
-  const path = request.nextUrl.pathname
-  const method = request.method
-  const userParam = request.nextUrl.searchParams.get("user")
+  console.log("PATH: ", path, "METHOD: ", method);
 
-  console.log("PATH: ", path, "METHOD: ", method)
-
-  const isProtectedRoute = protectedRoutes.includes(path)
+  const isProtectedRoute = protectedRoutes.includes(path);
   // const isPublicRoute = publicRoutes.includes(path)
-  const isProtectedMethod = protectedMethods.includes(method)
 
-  if (path === "/api/listings" && method === "GET" && !userParam) return NextResponse.next()
+  const cookieStore = await cookies();
+  const JWT = cookieStore.get("session")?.value;
+  const sessionData = await decrypt(JWT);
 
-  if (isProtectedRoute || isProtectedMethod) {
+  if (isProtectedRoute) {
     try {
-      console.log("\n --------------PROTECTED--------------")
+      console.log("\n --------------PROTECTED--------------");
 
-      //kanske inte optimalt med let men funkar!
-      let cookie: string | undefined | null= ""
+      if (!sessionData?.id)
+        return NextResponse.redirect(new URL("/signIn", request.nextUrl));
 
-      if (path.includes("/api")) {
-        cookie = request.headers.get('cookie'); // Debug headers
-        if (cookie) console.log('--got cookie from header--');
+      console.log("\n");
 
-      } else {
-        const cookieStore = cookies()
-        cookie = cookieStore.get("session")?.value
-        if (cookie) console.log('--got cookie from cookiestore--');
-
-      }
-
-      if (!cookie) return NextResponse.redirect(new URL('/', request.nextUrl))
-
-      const sessionData = await decrypt(cookie)
-
-      if (!sessionData?.userId) return NextResponse.redirect(new URL('/', request.nextUrl))
-
-      const headers = new Headers(request.headers)
-      headers.set("userId", sessionData.userId)
-
-      console.log("\n")
-
-      return NextResponse.next(
-        { headers }
-      )
-
+      return NextResponse.next();
     } catch (error: any) {
-      console.log("Error validating token: ", error.message)
+      console.log("Error validating token: ", error.message);
 
-      return NextResponse.json(
-        { message: "Unauthenticated" },
-        { status: 401 }
-      )
-
+      return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
     }
   }
 
-  console.log("--------------SAFE--------------")
+  if (path === signInRoute) {
+    if (!!sessionData?.id)
+      return NextResponse.redirect(new URL("/dashboard", request.nextUrl));
+
+    return NextResponse.next();
+  }
+
+  console.log("--------------SAFE--------------");
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/dashboard",
-    "/api/users/me",
-    "/api/listings",
-    "/api/listings/:id*",
-    "/api/bookngs/:id*",
-  ],
-}
+  matcher: ["/((?!api).*)"],
+};
