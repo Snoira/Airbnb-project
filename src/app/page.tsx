@@ -1,7 +1,5 @@
 import { getListings } from "@/actions/listings";
-import { AuthNav } from "@/components/AuthNav";
 import Link from "next/link";
-import { verifySession, deleteCookie } from "@/lib/dal";
 import {
   Card,
   CardContent,
@@ -10,17 +8,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { checkAuth } from "@/utils/jwt";
+
 export default async function Home() {
   const listings = await getListings();
-  const isAuth = await verifySession();
+  const isAuth = await checkAuth();
 
   console.log("\n!!!listings", listings, "\n");
 
   console.log("-------isAuth", isAuth);
-  const deleteHandler = async () => {
-    "use server";
-    await deleteCookie();
-  };
 
   return (
     <>

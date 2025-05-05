@@ -9,7 +9,6 @@ import {
   ForbiddenError,
 } from "@/utils/errors";
 import { getVerifiedUserId } from "@/helpers/requestHelpers";
-import { verifySession } from "@/lib/dal";
 
 type IncludeObj = {
   include: {

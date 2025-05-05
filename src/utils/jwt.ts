@@ -84,7 +84,7 @@ export async function createSession(user: SafeUser): Promise<string> {
   const sessionData = { user, expiresAt };
   const encryptedSession = await encrypt(sessionData); // Kryptera sessionData- bättre att kalla token?
 
-  const cookieStore = await cookies(); // Hämta cookieStore
+  const cookieStore = cookies(); // Hämta cookieStore
   cookieStore.set("session", encryptedSession, {
     httpOnly: true,
     secure: false, // TODO: ändra till true i produktion
@@ -96,6 +96,19 @@ export async function createSession(user: SafeUser): Promise<string> {
 }
 
 export async function deleteSession(): Promise<void> {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   cookieStore.delete("session");
 }
+
+const getJWTFromCookie = async (): Promise<string | null> => {
+  const cookieStore = cookies();
+  const session = cookieStore.get("session");
+  return session?.value ?? null;
+};
+
+export const checkAuth = async (): Promise<boolean> => {
+  const jwt = await getJWTFromCookie();
+  if (!jwt) return false;
+  const user = await decrypt(jwt);
+  return user ? true : false;
+};

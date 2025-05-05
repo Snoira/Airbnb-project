@@ -1,5 +1,5 @@
 import { getListingsWithBookingsByUserId } from "@/actions/listings";
-import { getSafeUser, verifySession } from "@/lib/dal";
+import { getSafeUser, verifySession } from "@/lib/definitions";
 import { ListingForm } from "@/components/ListingForm";
 import { AuthNav } from "@/components/AuthNav";
 import Link from "next/link";

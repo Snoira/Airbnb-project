@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AuthNav } from "./AuthNav";
-import { verifySession, deleteCookie } from "@/lib/dal";
+import { verifySession, deleteCookie } from "@/lib/definitions";
 
 export default async function Header() {
   const isAuth = await verifySession();

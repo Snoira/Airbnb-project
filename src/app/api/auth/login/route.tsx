@@ -8,7 +8,7 @@ import { ValidationError } from "@/utils/errors";
 import * as Jose from "jose";
 import { cookies } from "next/headers";
 import { SafeUser } from "@/types/user";
-import { deleteCookie } from "@/lib/dal";
+import { deleteCookie } from "@/lib/definitions";
 
 const secret: string | undefined = process.env.JWT_SECRET;
 if (!secret) throw new Error("JWT_SECRET environment variable is not set");

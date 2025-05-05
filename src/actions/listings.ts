@@ -1,7 +1,7 @@
 "use server";
 import { Listing, Booking } from "@prisma/client";
 import { ListingFormData, ListingWithBookings } from "@/types/listing";
-import { getJWTFromCookie } from "@/lib/dal";
+import { cookies } from "next/headers";
 import { decrypt } from "@/utils/jwt";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
@@ -33,10 +33,11 @@ export async function getListingsWithBookingsByUserId(
   try {
     const query = q ? `q=${q}&` : "";
 
-    const JWT = getJWTFromCookie();
+    const cookieStore = cookies();
+    const session = cookieStore.get("session");
+    const JWT = await decrypt(session?.value);
     if (!JWT) throw new Error("Could not get JWT");
-
-    const { id: userId } = await decrypt(JWT);
+    const { id: userId } = JWT;
 
     const res = await fetch(`${url}?${query}with_=bookings&user=${userId}`, {
       method: "GET",
@@ -64,7 +65,9 @@ export async function createListing(
   formData: ListingFormData
 ): Promise<number | null> {
   try {
-    const JWT = getJWTFromCookie();
+    const cookieStore = cookies();
+    const session = cookieStore.get("session");
+    const JWT = await decrypt(session?.value);
 
     if (!JWT) throw new Error("Could not get cookie");
 
@@ -120,15 +123,16 @@ export async function updateListingById(
   formData: ListingFormData
 ): Promise<Listing | null> {
   try {
-    const cookie = await getCookie();
-    if (!cookie) throw new Error("Could not get cookie");
+    const cookieStore = cookies();
+    const session = cookieStore.get("session");
+    const JWT = await decrypt(session?.value);
 
     const res = await fetch(`${url}${id}`, {
       method: "PUT",
       body: JSON.stringify(formData),
       credentials: "include",
       headers: {
-        cookie: `${cookie}`,
+        cookie: `${JWT}`,
       },
     });
 
@@ -149,7 +153,10 @@ export async function updateListingById(
 
 export async function deleteListingById(id: string) {
   try {
-    const JWT = getJWTFromCookie();
+    const cookieStore = cookies();
+    const session = cookieStore.get("session");
+    const JWT = await decrypt(session?.value);
+
     if (!JWT) throw new Error("Could not get JWT");
 
     const res = await fetch(`${url}${id}`, {
@@ -175,7 +182,9 @@ export async function deleteListingById(id: string) {
 
 export async function bookListingById(id: string): Promise<Booking | null> {
   try {
-    const JWT = getJWTFromCookie();
+    const cookieStore = cookies();
+    const session = cookieStore.get("session");
+    const JWT = await decrypt(session?.value);
     if (!JWT) throw new Error("Could not get JWT");
 
     const res = await fetch(`${url}${id}/bookings`, {

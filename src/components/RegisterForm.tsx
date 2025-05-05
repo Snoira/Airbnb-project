@@ -26,9 +26,8 @@ export function RegisterForm() {
     event.preventDefault();
     try {
       await registerFormSchema.validate(formData, { abortEarly: false });
-      const status = await register(formData);
-
-      if (status === 201) router.push("/");
+      await register(formData);
+      console.log("registered");
     } catch (error) {
       // återkommer med bättre errorhantering, form som ger feedback.
       if (error instanceof Yup.ValidationError) {

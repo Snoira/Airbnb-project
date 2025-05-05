@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { getSafeUser } from "@/lib/dal";
 import Header from "@/components/Header";
 
 const geistSans = localFont({
@@ -25,8 +24,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const user = await getSafeUser()
-
   return (
     <html lang="en">
       <body

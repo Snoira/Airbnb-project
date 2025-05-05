@@ -1,5 +1,5 @@
 import { getListingById } from "@/actions/listings";
-import { verifySession } from "@/lib/dal";
+import { verifySession } from "@/lib/definitions";
 
 type APIOptions = {
   params: {
