@@ -8,10 +8,8 @@ import {
   DatabaseError,
   ForbiddenError,
 } from "@/utils/errors";
-// import { getVerifiedUserId } from "@/helpers/requestHelpers";
-import { getJWTFromCookie } from "@/utils/jwt";
 import { decrypt } from "@/utils/jwt";
-import { getUserById } from "@/utils/prisma";
+import { getDBUserById } from "@/utils/prisma";
 
 type IncludeObj = {
   include: {
@@ -21,54 +19,61 @@ type IncludeObj = {
 
 const prisma = new PrismaClient();
 
-// export async function POST(request: NextRequest) {
-//   try {
-//     console.log("\n --CREATE LISTING-- \n");
-//     const body: ListingData = await request.json();
-//     console.log("body", body);
-//     //kan använda verifySession här också men jag orkar inte ändra nu
-//     // const userId = await getVerifiedUserId(request, prisma);
-//     console.log("userid", userId);
+export async function POST(request: NextRequest) {
+  try {
+    console.log("\n --CREATE LISTING-- \n");
 
-//     const [hasErrors, errorText] = listingValidation(body);
-//     if (hasErrors) throw new ValidationError(errorText);
+    const JWT = request.headers.get("Authorization")?.split(" ")[1];
+    const sessionData = await decrypt(JWT);
+    const userId = sessionData?.id ?? null;
+    if (!userId) throw new ForbiddenError("User does not match request");
 
-//     if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
-//     const reservedDates: Date[] = [];
+    const validatedUser = await getDBUserById(userId);
+    if (!validatedUser) throw new ForbiddenError("User does not match request");
+    const test = request;
+    console.log("test", test);
+    const body: ListingData = await request.json();
+    console.log("NEW LISTING BODY", body);
 
-//     const newListing = await prisma.listing.create({
-//       data: {
-//         name: body.name,
-//         createdById: userId,
-//         description: body.description,
-//         location: body.location,
-//         pricePerNight: body.pricePerNight,
-//         reservedDates,
-//       },
-//     });
+    const [hasErrors, errorText] = listingValidation(body);
+    if (hasErrors) throw new ValidationError(errorText);
 
-//     console.log("new listing: ", newListing);
+    if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
+    const reservedDates: Date[] = [];
 
-//     return NextResponse.json(newListing, { status: 201 });
-//   } catch (error: any) {
-//     if (
-//       error instanceof ValidationError ||
-//       error instanceof NotFoundError ||
-//       error instanceof DatabaseError
-//     )
-//       return NextResponse.json(
-//         { error: error.message },
-//         { status: error.statusCode }
-//       );
+    const newListing = await prisma.listing.create({
+      data: {
+        name: body.name,
+        createdById: validatedUser.id,
+        description: body.description,
+        location: body.location,
+        pricePerNight: body.pricePerNight,
+        reservedDates,
+      },
+    });
 
-//     console.error("Unexpected error in createListing:", error);
+    console.log("new listing: ", newListing);
 
-//     return NextResponse.json(
-//       { error: "Internal Server Error" },
-//       { status: 500 }
-//     );
-//   }
-// }
+    return NextResponse.json(newListing, { status: 201 });
+  } catch (error: any) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof NotFoundError ||
+      error instanceof DatabaseError
+    )
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+
+    console.error("Unexpected error in createListing:", error);
+
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function GET(request: NextRequest) {
   console.log("\n --GET LISTINGS-- \n");

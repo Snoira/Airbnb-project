@@ -1,11 +1,11 @@
 "use server";
 
-import { UserRegistrationData, UserLoginData } from "@/types/user";
+import { RegistrationData, LoginData } from "@/types/user";
 import {
   loginValidation,
   registrationValidation,
 } from "@/utils/validators/userValidator";
-import { getUserByEmail } from "@/utils/prisma";
+import { getDBUserByEmail } from "@/utils/prisma";
 import { ValidationError } from "@/utils/errors";
 import bcrypt from "bcryptjs";
 import { PrismaClient, User } from "@prisma/client";
@@ -33,11 +33,11 @@ const prisma = new PrismaClient();
 //   }
 // }
 
-export async function register(formData: UserRegistrationData) {
+export async function register(formData: RegistrationData) {
   const [hasErrors, errorText] = registrationValidation(formData);
   if (hasErrors) console.error(errorText);
 
-  const isRegistered = await getUserByEmail(
+  const isRegistered = await getDBUserByEmail(
     formData.email.toLowerCase(),
     prisma
   );
@@ -57,20 +57,19 @@ export async function register(formData: UserRegistrationData) {
     const { password, ...safeUser } = newUser;
 
     await createSession(safeUser);
-    redirect("/dashboard");
+    return redirect("/dashboard");
   } catch (error: any) {
     console.error("register user error ", error);
-    return null;
   }
 }
 
-export async function login(formData: UserLoginData) {
+export async function login(formData: LoginData) {
   const [hasErrors, errors] = loginValidation(formData);
   if (hasErrors) {
     console.log(errors);
     return { success: false };
   }
-  const user = await getUserByEmail(formData.email.toLowerCase(), prisma);
+  const user = await getDBUserByEmail(formData.email.toLowerCase(), prisma);
   if (!user)
     throw new ValidationError(`Could not find user with matching credentials`);
 

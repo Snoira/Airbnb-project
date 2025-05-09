@@ -2,13 +2,17 @@ import { PrismaClient, User, Listing, Booking, Role } from "@prisma/client";
 import { DatabaseError, NotFoundError } from "@/utils/errors";
 import { ListingWithBookings } from "@/types/listing";
 
-export async function getUserByEmail(
+const prisma = new PrismaClient();
+
+export async function getDBUserByEmail(
   email: string,
-  client: PrismaClient
+  client?: PrismaClient
 ): Promise<User | null> {
   console.log("!!!GETUSERBYEMAIL");
+
+  const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
   try {
-    const user = await client.user.findUnique({
+    const user = await db.user.findUnique({
       where: {
         email,
       },
@@ -21,9 +25,9 @@ export async function getUserByEmail(
   }
 }
 
-export async function getUserById(
+export async function getDBUserById(
   userId: string,
-  client: PrismaClient,
+  client?: PrismaClient,
   includeField?: string
 ): Promise<User> {
   try {
@@ -34,7 +38,9 @@ export async function getUserById(
         }[includeField]
       : {};
 
-    const user = await client.user.findUnique({
+    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
+
+    const user = await db.user.findUnique({
       where: {
         id: userId,
       },
@@ -49,15 +55,16 @@ export async function getUserById(
   }
 }
 
-export async function getListingById(
+export async function getDBListingById(
   listingId: string,
-  client: PrismaClient,
+  client?: PrismaClient,
   includeField?: string
 ): Promise<Listing> {
   try {
     const include = includeField ? { [includeField]: true } : {};
+    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
 
-    const listing = await client.listing.findUnique({
+    const listing = await db.listing.findUnique({
       where: {
         id: listingId,
       },
@@ -73,9 +80,9 @@ export async function getListingById(
   }
 }
 
-export async function getBookingById(
+export async function getDBBookingById(
   bookingId: string,
-  client: PrismaClient,
+  client?: PrismaClient,
   includeField?: string
 ): Promise<Booking> {
   try {
@@ -87,7 +94,9 @@ export async function getBookingById(
         }[includeField]
       : {};
 
-    const booking = await client.booking.findUnique({
+    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
+
+    const booking = await db.booking.findUnique({
       where: {
         id: bookingId,
       },
@@ -103,38 +112,20 @@ export async function getBookingById(
   }
 }
 
-export async function deleteBookingById(
+export async function deleteDBBookingById(
   bookingId: string,
-  client: PrismaClient
+  client?: PrismaClient
 ): Promise<undefined> {
   try {
-    await client.booking.delete({
+    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
+
+    await db.booking.delete({
       where: {
         id: bookingId,
       },
     });
   } catch (error) {
     throw new DatabaseError(`Could not delete booking, id: ${bookingId}`);
-  }
-}
-
-export async function checkAdmin(
-  userId: string,
-  client: PrismaClient
-): Promise<boolean> {
-  try {
-    //omödig?
-    const user = await client.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-    console.log(user);
-    //typeof Role.ADMIN
-    const isAdmin = user?.role === "ADMIN";
-    return isAdmin;
-  } catch (error) {
-    throw new DatabaseError("Something went wrong when checking role");
   }
 }
 

@@ -1,12 +1,13 @@
 "use server";
-import { Listing, Booking } from "@prisma/client";
-import { ListingFormData, ListingWithBookings } from "@/types/listing";
+import { PrismaClient, Listing, Booking } from "@prisma/client";
+import { ListingData, ListingWithBookings } from "@/types/listing";
 import { cookies } from "next/headers";
 import { getJWTFromCookie, decrypt } from "@/utils/jwt";
-import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
-import { getUserById } from "@/utils/prisma";
-
+import { getDBUserById } from "@/utils/prisma";
+import { getUserIdFromJWT } from "@/utils/jwt";
+import { listingValidation } from "@/utils/validators/listingValidator";
+import { getDBListingById } from "@/utils/prisma";
 const url = "/api/listings";
 const prisma = new PrismaClient();
 
@@ -23,12 +24,10 @@ export async function getListings(): Promise<Listing[] | null> {
 export async function getListingsWithBookingsByUserId() {
   console.log("\n --GET LISTINGS W BOOKINGS AND USERID-- \n");
 
-  const JWT = await getJWTFromCookie();
-  const sessionData = await decrypt(JWT);
-  const userId = sessionData?.id ?? null;
+  const userId = await getUserIdFromJWT();
 
-  if (!userId) return redirect("/");
-  const validatedUser = await getUserById(userId, prisma);
+  if (!userId) return redirect("/signIn");
+  const validatedUser = await getDBUserById(userId);
 
   try {
     const listings = await prisma.listing.findMany({
@@ -47,65 +46,47 @@ export async function getListingsWithBookingsByUserId() {
 }
 
 export async function createListing(
-  formData: ListingFormData
-): Promise<number | null> {
-  try {
-    const cookieStore = cookies();
-    const session = cookieStore.get("session");
-    const JWT = await decrypt(session?.value);
+  formData: ListingData
+): Promise<Listing | null> {
+  console.log("\n --CREATE LISTING-- \n");
 
-    if (!JWT) throw new Error("Could not get cookie");
+  const userId = await getUserIdFromJWT();
+  if (!userId) return redirect("/signIn");
+  const validatedUser = await getDBUserById(userId);
+  if (!validatedUser) return redirect("/signIn");
 
-    const res = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(formData),
-      headers: {
-        Authorization: `Bearer ${JWT}`,
-      },
-      credentials: "include",
-    });
+  const [hasErrors, errorText] = listingValidation(formData);
 
-    if (res.ok) {
-      const data: Listing = await res.json();
-      console.log("RES OK LISTING", data);
-      return res.status;
-      //Visar listing här men ej i clienten ListingForm, oklart varför- middleware?
-      //return data
-    }
-
-    if (res.status === 400) throw new Error("400, Validation error");
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-
-    // throw new Error(`${res.status}`)
-    return null;
-  } catch (error: any) {
-    console.log("Error createListing", error);
+  if (hasErrors) {
+    console.log(errorText);
     return null;
   }
+
+  if (typeof formData.pricePerNight === "string")
+    parseFloat(formData.pricePerNight);
+  const reservedDates: Date[] = [];
+
+  const newListing = await prisma.listing.create({
+    data: {
+      name: formData.name,
+      createdById: validatedUser.id,
+      description: formData.description,
+      location: formData.location,
+      pricePerNight: formData.pricePerNight,
+      reservedDates,
+    },
+  });
+
+  return newListing;
 }
 
-export async function getListingById(id: string): Promise<Listing | null> {
-  try {
-    const res = await fetch(`${url}/${id}`, { method: "GET" });
-
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
-    if (res.status === 400) throw new Error("400, Validation error");
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
+export async function getListingById(id: string): Promise<Listing> {
+  return await getDBListingById(id);
 }
 
 export async function updateListingById(
   id: string,
-  formData: ListingFormData
+  formData: ListingData
 ): Promise<Listing | null> {
   try {
     const cookieStore = cookies();

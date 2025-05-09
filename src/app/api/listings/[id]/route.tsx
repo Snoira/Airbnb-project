@@ -8,18 +8,23 @@ import {
   DatabaseError,
   ForbiddenError,
 } from "@/utils/errors";
-import { checkAdmin, deleteBookingById, getListingById } from "@/utils/prisma";
-import { getVerifiedUserId } from "@/helpers/requestHelpers";
+import {
+  checkAdmin,
+  deleteBookingById,
+  DBGetListingById,
+} from "@/utils/prisma";
+import { APIOptions } from "@/types/general";
+import { getUserIdFromJWT } from "@/utils/jwt";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest, options: APIOptions) {
+export async function GET(options: APIOptions) {
   const id = options.params.id;
   if (!id) throw new ValidationError("Failed to retrive id");
   console.log("___________________ \n GET LISTING BY ID \n___________________");
 
   try {
-    const listing = await getListingById(id, prisma);
+    const listing = await DBGetListingById(id);
 
     return NextResponse.json(listing, { status: 200 });
   } catch (error: any) {
@@ -44,18 +49,17 @@ export async function PUT(request: NextRequest, options: APIOptions) {
     const id = options.params.id;
     if (!id) throw new ValidationError("Failed to retrive id");
 
-    // const userId = await getVerifiedUserId(request, prisma)
+    const JWT = request.headers.get("Authorization")?.split(" ")[1];
+    const userId = await getUserIdFromJWT(JWT);
+    if (!userId) throw new ValidationError("No user id found");
 
     const body: ListingData = await request.json();
     const [hasErrors, errorText] = listingValidation(body);
     if (hasErrors) throw new ValidationError(errorText);
 
-    if (!body.createdById) throw new ValidationError("no userId");
-    const userId = body.createdById;
-
-    //använda checkListing istället?
-    const listing = await getListingById(id, prisma);
-    // if (listing.createdById !== userId) throw new ForbiddenError("User is not allwed to update listing")
+    const listing = await DBGetListingById(id);
+    if (listing.createdById !== userId)
+      throw new ForbiddenError("User is not allwed to update listing");
 
     const updatedListing = await prisma.listing.update({
       where: {

@@ -1,7 +1,7 @@
 import { User } from "@prisma/client";
 
-type UserRegistrationData = Pick<User, "name" | "email" | "password">;
+type RegistrationData = Pick<User, "name" | "email" | "password">;
 
-type UserLoginData = Pick<User, "email" | "password">;
+type LoginData = Pick<User, "email" | "password">;
 
 export type SafeUser = Omit<User, "password">;

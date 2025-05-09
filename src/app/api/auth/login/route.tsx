@@ -1,52 +1,42 @@
 import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { UserLoginData } from "@/types/user";
+import { LoginData } from "@/types/user";
 import { loginValidation } from "@/utils/validators/userValidator";
 import bcrypt from "bcryptjs";
-import { getUserByEmail } from "@/utils/prisma";
+import { getDBUserByEmail } from "@/utils/prisma";
 import { ValidationError } from "@/utils/errors";
 import * as Jose from "jose";
 import { cookies } from "next/headers";
 import { SafeUser } from "@/types/user";
+import { encrypt } from "@/utils/jwt";
 
-const secret: string | undefined = process.env.JWT_SECRET;
-if (!secret) throw new Error("JWT_SECRET environment variable is not set");
+// async function createSessionToken(payload: SafeUser): Promise<SessionToken> {
+//   const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000);
+//   try {
+//     const token = await new Jose.SignJWT(payload)
+//       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+//       .setIssuedAt()
+//       .setExpirationTime(expiresAt)
+//       .sign(encodedSecret);
 
-const encodedSecret = new TextEncoder().encode(secret);
-
-const prisma = new PrismaClient();
-
-type SessionToken = {
-  token: string;
-  expiresAt: Date;
-};
-
-async function createSessionToken(payload: SafeUser): Promise<SessionToken> {
-  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000);
-  try {
-    const token = await new Jose.SignJWT(payload)
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .setIssuedAt()
-      .setExpirationTime(expiresAt)
-      .sign(encodedSecret);
-
-    return { token, expiresAt };
-  } catch (error) {
-    console.error("Error signing JWT:", error);
-    throw new Error("Failed to sign JWT");
-  }
-}
+//     return { token, expiresAt };
+//   } catch (error) {
+//     console.error("Error signing JWT:", error);
+//     throw new Error("Failed to sign JWT");
+//   }
+// }
 
 export async function POST(request: NextRequest) {
   try {
-    const body: UserLoginData = await request.json();
+    const body: LoginData = await request.json();
 
     const [hasErrors, errors] = loginValidation(body);
     if (hasErrors) {
       return NextResponse.json({ errors }, { status: 400 });
     }
 
-    const user = await getUserByEmail(body.email.toLowerCase(), prisma);
+    const user = await getDBUserByEmail(body.email.toLowerCase());
+
     if (!user)
       throw new ValidationError(
         `Could not find user with matching credentials`
@@ -59,23 +49,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { password, ...safeUser } = user;
+    const sessionData = {
+      id: user.id,
+      role: user.role,
+    };
 
-    const sessionToken = await createSessionToken(safeUser);
-    const cookieStore = await cookies();
+    const JWT = await encrypt(sessionData);
 
-    cookieStore.set("session", sessionToken.token, {
-      httpOnly: false,
-      expires: sessionToken.expiresAt,
-      sameSite: "lax",
-    });
-
-    // const headers = new Headers();
-    // headers.set("set-cookie", `token=${sessionToken.token}`);
-
-    return NextResponse.json(sessionToken, {
+    return NextResponse.json({
       status: 201,
-      //   headers,
+      body: {
+        token: JWT,
+      },
     });
   } catch (error: any) {
     console.log("Error: failed to login", error.message);

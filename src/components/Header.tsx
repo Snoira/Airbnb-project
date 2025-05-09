@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthNav } from "./AuthNav";
 import { checkAuth, deleteSession } from "@/utils/jwt";
+
 export default async function Header() {
   const isAuth = await checkAuth();
 
@@ -28,13 +29,13 @@ export default async function Header() {
             href="/"
             className="text-sm leading-6 text-stone-900 hover:text-amber-400 hover:underline"
           >
-            Listings
+            About
           </Link>
           <Link
-            href="/"
+            href="/dashboard"
             className="text-sm leading-6 text-stone-900 hover:text-amber-400 hover:underline"
           >
-            About
+            My Profile
           </Link>
         </div>
         <div className="">

@@ -23,35 +23,13 @@ type SessionData = {
 const secret: string = process.env.JWT_SECRET ?? "secret";
 const encodedSecret = new TextEncoder().encode(secret);
 
-//radera senare??
-// The payload should contain the minimum, unique user data that'll be used
-// in subsequent requests, such as the user's ID, role, etc.
-// It should not contain personally identifiable information like phone number,
-//  email address, credit card information, etc, or sensitive data like passwords.
+
 export async function encrypt(payload: SessionData): Promise<string> {
   return await new Jose.SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("5h")
     .sign(encodedSecret);
-}
-
-export async function createSessionToken(
-  payload: SafeUser
-): Promise<SessionToken> {
-  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000);
-  try {
-    const token = await new Jose.SignJWT(payload)
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .setIssuedAt()
-      .setExpirationTime(expiresAt)
-      .sign(encodedSecret);
-
-    return { token, expiresAt };
-  } catch (error) {
-    console.error("Error signing JWT:", error);
-    throw new Error("Failed to sign JWT");
-  }
 }
 
 export async function decrypt(
@@ -111,4 +89,13 @@ export const checkAuth = async (): Promise<boolean> => {
   if (!jwt) return false;
   const user = await decrypt(jwt);
   return user ? true : false;
+};
+
+export const getUserIdFromJWT = async (
+  apiJWT?: string | undefined
+): Promise<string | null> => {
+  const jwt = apiJWT ?? (await getJWTFromCookie());
+  if (!jwt) return null;
+  const user = await decrypt(jwt);
+  return user?.id ?? null;
 };

@@ -1,22 +1,23 @@
 import { PrismaClient, User } from "@prisma/client";
-import { UserRegistrationData } from "@/types/user";
+import { RegistrationData } from "@/types/user";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createSession } from "@/utils/jwt";
 import { registrationValidation } from "@/utils/validators/userValidator";
-import { getUserByEmail } from "@/utils/prisma";
-import { ValidationError } from "@/utils/errors";
+import { getDBUserByEmail } from "@/utils/prisma";
+import { ValidationError, DatabaseError } from "@/utils/errors";
+import { encrypt } from "@/utils/jwt";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const body: UserRegistrationData = await request.json();
+    const body: RegistrationData = await request.json();
 
     const [hasErrors, errorText] = registrationValidation(body);
     if (hasErrors) throw new ValidationError(errorText);
 
-    const isRegistered = await getUserByEmail(body.email.toLowerCase(), prisma);
+    const isRegistered = await getDBUserByEmail(body.email.toLowerCase());
     if (isRegistered) throw new ValidationError(`User already exists`);
 
     const newPassword: string = await bcrypt.hash(body.password, 10);
@@ -29,16 +30,29 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const { password, ...safeUser } = newUser;
+    if (!newUser) throw new DatabaseError(`Could not create user`);
 
-    await createSession(safeUser);
+    const sessionData = {
+      id: newUser.id,
+      role: newUser.role,
+    };
 
-    return NextResponse.json(
-      { message: "User registered successfully" },
-      { status: 201 }
-    );
+    const JWT = await encrypt(sessionData);
+
+    return NextResponse.json({
+      status: 201,
+      body: {
+        token: JWT,
+      },
+    });
   } catch (error: any) {
     if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    }
+    if (error instanceof DatabaseError) {
       return NextResponse.json(
         { error: error.message },
         { status: error.statusCode }
