@@ -1,6 +1,5 @@
 import { PrismaClient, User, Listing, Booking, Role } from "@prisma/client";
 import { DatabaseError, NotFoundError } from "@/utils/errors";
-import { ListingWithBookings } from "@/types/listing";
 
 const prisma = new PrismaClient();
 
@@ -58,17 +57,14 @@ export async function getDBUserById(
 export async function getDBListingById(
   listingId: string,
   client?: PrismaClient,
-  includeField?: string
 ): Promise<Listing> {
   try {
-    const include = includeField ? { [includeField]: true } : {};
     const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
 
     const listing = await db.listing.findUnique({
       where: {
         id: listingId,
-      },
-      // include,
+      }
     });
 
     if (!listing)
@@ -126,6 +122,21 @@ export async function deleteDBBookingById(
     });
   } catch (error) {
     throw new DatabaseError(`Could not delete booking, id: ${bookingId}`);
+  }
+}
+
+export async function getDBBookingsByFieldId(field:string, Id:string ):Promise<Booking[]>{
+  try {
+    console.log("WHERE", {[field]: Id})
+    const bookings = await prisma.booking.findMany({
+      where: {
+        [field]: Id,
+      }
+    })
+
+    return bookings
+  } catch (error) {
+    throw new DatabaseError("Could not get bookings by listing id")
   }
 }
 

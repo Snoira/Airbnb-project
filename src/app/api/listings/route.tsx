@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { ListingData } from "@/types/listing";
-import { listingValidation } from "@/utils/validators/listingValidator";
 import {
   ValidationError,
   NotFoundError,
@@ -10,14 +8,15 @@ import {
 } from "@/utils/errors";
 import { decrypt } from "@/utils/jwt";
 import { getDBUserById } from "@/utils/prisma";
-
+import { listingValidation } from "@/utils/validators/listingValidator";
+import { ListingData } from "@/types/listing";
 type IncludeObj = {
   include: {
     [key: string]: boolean;
   };
 };
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,14 +29,11 @@ export async function POST(request: NextRequest) {
 
     const validatedUser = await getDBUserById(userId);
     if (!validatedUser) throw new ForbiddenError("User does not match request");
-    const test = request;
-    console.log("test", test);
-    const body: ListingData = await request.json();
-    console.log("NEW LISTING BODY", body);
-
+    
+    const body:ListingData = await request.json().catch(() => {});
     const [hasErrors, errorText] = listingValidation(body);
     if (hasErrors) throw new ValidationError(errorText);
-
+    
     if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
     const reservedDates: Date[] = [];
 
@@ -52,7 +48,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log("new listing: ", newListing);
 
     return NextResponse.json(newListing, { status: 201 });
   } catch (error: any) {
@@ -100,7 +95,7 @@ export async function GET(request: NextRequest) {
       //BORT REQ
 
       if (!userId) throw new ForbiddenError("User does not match request");
-      const validatedUserId = await getUserById(userId, prisma);
+      const validatedUserId = await getDBUserById(userId);
 
       where.createdById = validatedUserId;
       include = {

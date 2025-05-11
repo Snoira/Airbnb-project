@@ -3,14 +3,11 @@ import * as Jose from "jose";
 import { cookies } from "next/headers";
 import { SafeUser } from "@/types/user";
 import { SessionToken } from "@/types/general";
+import {Role} from "@prisma/client";
 
 type JWTUserPayload = {
   id: string;
-  email: string;
-  name: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
+  role: Role;
   iat: number;
   exp: number;
 };
@@ -41,7 +38,7 @@ export async function decrypt(
     const output = await Jose.jwtVerify(token, encodedSecret, {
       algorithms: ["HS256"],
     });
-
+    
     return output.payload as JWTUserPayload;
   } catch (error: any) {
     if (error instanceof Jose.errors.JWTExpired) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { ListingData, ListingWithBookings } from "@/types/listing";
-import { listingValidation } from "@/utils/validators/listingValidator";
+import { listingValidation, listingSchema } from "@/utils/validators/listingValidator";
 import {
   ValidationError,
   NotFoundError,
@@ -9,12 +9,12 @@ import {
   ForbiddenError,
 } from "@/utils/errors";
 import {
-  checkAdmin,
-  deleteBookingById,
-  DBGetListingById,
+  deleteDBBookingById,
+  getDBListingById,
 } from "@/utils/prisma";
 import { APIOptions } from "@/types/general";
-import { getUserIdFromJWT } from "@/utils/jwt";
+import { getUserIdFromJWT, decrypt } from "@/utils/jwt";
+
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,7 @@ export async function GET(options: APIOptions) {
   console.log("___________________ \n GET LISTING BY ID \n___________________");
 
   try {
-    const listing = await DBGetListingById(id);
+    const listing = await getDBListingById(id);
 
     return NextResponse.json(listing, { status: 200 });
   } catch (error: any) {
@@ -46,20 +46,27 @@ export async function GET(options: APIOptions) {
 
 export async function PUT(request: NextRequest, options: APIOptions) {
   try {
+    console.log("___________________ \n PUT LISTING BY ID \n___________________");
+
     const id = options.params.id;
     if (!id) throw new ValidationError("Failed to retrive id");
 
     const JWT = request.headers.get("Authorization")?.split(" ")[1];
     const userId = await getUserIdFromJWT(JWT);
-    if (!userId) throw new ValidationError("No user id found");
+    if (!userId) throw new ForbiddenError("No user id found");
 
-    const body: ListingData = await request.json();
-    const [hasErrors, errorText] = listingValidation(body);
-    if (hasErrors) throw new ValidationError(errorText);
-
-    const listing = await DBGetListingById(id);
-    if (listing.createdById !== userId)
+    const body = await request.json().catch(() => {});
+    const validation = listingSchema.safeParse(body);
+    if (!validation.success) {
+      const errorText = validation.error.errors.map((error) => error.path[0] + error.message).join(", ");
+      throw new ValidationError(errorText);
+    }
+    
+    const existingListing = await getDBListingById(id);
+    if (existingListing.createdById !== userId)
       throw new ForbiddenError("User is not allwed to update listing");
+
+    if (!existingListing) throw new NotFoundError("Listing not found");
 
     const updatedListing = await prisma.listing.update({
       where: {
@@ -70,12 +77,12 @@ export async function PUT(request: NextRequest, options: APIOptions) {
         description: body.description,
         location: body.location,
         pricePerNight: body.pricePerNight,
-        // reservedDates: body.reservedDates,
+        reservedDates: body.reservedDates,
       },
     });
 
     return NextResponse.json(updatedListing, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     if (
       error instanceof ValidationError ||
       error instanceof NotFoundError ||
@@ -96,37 +103,38 @@ export async function PUT(request: NextRequest, options: APIOptions) {
 
 export async function DELETE(request: NextRequest, options: APIOptions) {
   try {
-    //Ska kunna raderas oavsett skapare om användare är admin
+    console.log("___________________ \n DELETE LISTING BY ID \n___________________");
+
     const id = options.params.id;
     if (!id) throw new ValidationError("Failed to retrive id");
 
-    // const userId = await getVerifiedUserId(request, prisma)
-    const body = await request.json();
-    const userId = body.createdById;
+    const JWT = request.headers.get("Authorization")?.split(" ")[1];
+    const user = await decrypt(JWT);
+    if (!user || !user.id ) throw new ForbiddenError("No user id found");
 
-    const includeField = "bookings";
-    const listing = await getListingById(id, prisma, includeField);
+    const listing = await getDBListingById(id);
+    if (!listing) throw new NotFoundError("Listing not found");
+    
+    if (listing.createdById === user.id || user.role === "ADMIN") {
+      await prisma.booking.deleteMany({
+        where: {
+          listingId: id,
+        },
+      });
 
-    if (listing.createdById !== userId) {
-      //finns kanske bättre sätt att lösa? middleware typ?
-      const isAdmin = await checkAdmin(userId, prisma);
-      if (!isAdmin)
-        throw new ForbiddenError(
-          "You do not have permission to delete this listing"
-        );
+      await prisma.listing.delete({
+        where: {
+          id,
+        },
+      });
+
+      return new NextResponse(null, { status: 204 });
     }
 
-    // cascade prisma
-    // if (listing.bookings?.length > 0) {
-    //     const promises = listing.bookings.map((booking) => {
-    //         return deleteBookingById(booking.id, prisma)
-    //     })
-    //     await Promise.all(promises)
-    // }
+   throw new ForbiddenError(
+          "You do not have permission to delete this listing"
+        );
 
-    await deleteBookingById(id, prisma);
-
-    return new NextResponse(null, { status: 204 });
   } catch (error: any) {
     if (
       error instanceof ValidationError ||
