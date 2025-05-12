@@ -10,11 +10,11 @@ import { decrypt } from "@/utils/jwt";
 import { getDBUserById } from "@/utils/prisma";
 import { listingValidation } from "@/utils/validators/listingValidator";
 import { ListingData } from "@/types/listing";
-type IncludeObj = {
-  include: {
-    [key: string]: boolean;
-  };
-};
+// type IncludeObj = {
+//   include: {
+//     [key: string]: boolean;
+//   };
+// };
 
 const prisma = new PrismaClient()
 
@@ -73,42 +73,45 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   console.log("\n --GET LISTINGS-- \n");
   try {
-    const searchParams = new URL(request.url).searchParams;
-    const queries = ["q", "user", "with_"];
-    const [q, user, with_] = queries.map((q) => searchParams.get(q));
+    // const searchParams = new URL(request.url).searchParams;
+    // const queries = ["q", "user", "with_"];
+    // const [q, user, with_] = queries.map((q) => searchParams.get(q));
 
-    let where: { [key: string]: any } = {};
-    let include: IncludeObj | {} = {};
+    // let where: { [key: string]: any } = {};
+    // let include: IncludeObj | {} = {};
 
-    if (q) {
-      where.name = {
-        contains: q,
-        mode: "insensitive",
-      };
-    }
+    // if (q) {
+    //   where.name = {
+    //     contains: q,
+    //     mode: "insensitive",
+    //   };
+    // }
 
-    const JWT = request.headers.get("Authorization")?.split(" ")[1];
-    const sessionData = await decrypt(JWT);
-    const userId = sessionData?.id ?? null;
+    // const JWT = request.headers.get("Authorization")?.split(" ")[1];
+    // const sessionData = await decrypt(JWT);
+    // const userId = sessionData?.id ?? null;
 
-    if (user && with_ === "bookings") {
-      //BORT REQ
+    // if (user && with_ === "bookings") {
+    //   //BORT REQ
 
-      if (!userId) throw new ForbiddenError("User does not match request");
-      const validatedUserId = await getDBUserById(userId);
+    //   if (!userId) throw new ForbiddenError("User does not match request");
+    //   const validatedUser = await getDBUserById(userId);
+    //   if (!validatedUser) throw new ForbiddenError("User does not match request");
 
-      where.createdById = validatedUserId;
-      include = {
-        include: { bookings: true },
-      };
-    }
+   
+
+    //   where.createdById = userId;
+    //   include = {
+    //     include: { bookings: true },
+    //   };
+    // }
 
     const listings = await prisma.listing.findMany({
-      where,
-      ...include,
+      // where,
+      // ...include,
     });
 
-    if (listings.length === 0) throw new NotFoundError("No listings found");
+    // if (listings.length === 0) throw new NotFoundError("No listings found");
 
     return NextResponse.json(listings, { status: 200 });
   } catch (error: any) {

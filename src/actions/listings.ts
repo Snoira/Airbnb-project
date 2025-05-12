@@ -8,6 +8,7 @@ import { getDBUserById } from "@/utils/prisma";
 import { getUserIdFromJWT } from "@/utils/jwt";
 import { listingValidation } from "@/utils/validators/listingValidator";
 import { getDBListingById } from "@/utils/prisma";
+
 const url = "/api/listings";
 const prisma = new PrismaClient();
 
@@ -25,19 +26,21 @@ export async function getListingsWithBookingsByUserId() {
   console.log("\n --GET LISTINGS W BOOKINGS AND USERID-- \n");
 
   const userId = await getUserIdFromJWT();
-
   if (!userId) return redirect("/signIn");
-  const validatedUser = await getDBUserById(userId);
+
+  const user = await getDBUserById(userId);
+  if (!user) return redirect("/signIn");
 
   try {
     const listings = await prisma.listing.findMany({
       where: {
-        createdById: validatedUser.id,
+        createdById: userId,
       },
       include: {
         bookings: true,
       },
     });
+    
     return listings;
   } catch (error) {
     console.log("could not fetch listing", error);
@@ -54,13 +57,6 @@ export async function createListing(
   if (!userId) return redirect("/signIn");
   const validatedUser = await getDBUserById(userId);
   if (!validatedUser) return redirect("/signIn");
-
-  const [hasErrors, errorText] = listingValidation(formData);
-
-  if (hasErrors) {
-    console.log(errorText);
-    return null;
-  }
 
   if (typeof formData.pricePerNight === "string")
     parseFloat(formData.pricePerNight);
@@ -81,7 +77,11 @@ export async function createListing(
 }
 
 export async function getListingById(id: string): Promise<Listing> {
-  return await getDBListingById(id);
+  const listing = await getDBListingById(id);
+  if (!listing) {
+    throw new Error("Listing not found");
+  }
+  return listing;
 }
 
 export async function updateListingById(

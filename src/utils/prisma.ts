@@ -28,7 +28,7 @@ export async function getDBUserById(
   userId: string,
   client?: PrismaClient,
   includeField?: string
-): Promise<User> {
+): Promise<User | null> {
   try {
     const includeFieldLookup = includeField
       ? {
@@ -46,8 +46,6 @@ export async function getDBUserById(
       ...includeFieldLookup,
     });
 
-    if (!user) throw new NotFoundError(`Could not find user, email: ${userId}`);
-
     return user;
   } catch (error) {
     throw new DatabaseError("Could not get user");
@@ -57,7 +55,8 @@ export async function getDBUserById(
 export async function getDBListingById(
   listingId: string,
   client?: PrismaClient,
-): Promise<Listing> {
+): Promise<Listing| null> {
+  console.log("!!!GETLISTINGBYID");
   try {
     const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -66,9 +65,6 @@ export async function getDBListingById(
         id: listingId,
       }
     });
-
-    if (!listing)
-      throw new NotFoundError(`Could not find listing, id: ${listingId}`);
 
     return listing;
   } catch (error) {
@@ -139,39 +135,3 @@ export async function getDBBookingsByFieldId(field:string, Id:string ):Promise<B
     throw new DatabaseError("Could not get bookings by listing id")
   }
 }
-
-//onödiga?
-// export async function checkListingAndPermission(objId: string, client: PrismaClient, userId: string): Promise<[boolean, boolean]> {
-//     //generellt bra att en funktion bara gör en sak? borde jag bryta ut checkListing i en egen som sen kallas på i denna?
-//     try {
-//         //Kan jag göra listing till en param så funktionen kan användas för boooking också?
-//         const object = await client.listing.findUnique({
-//             where: {
-//                 id: objId
-//             }
-//         })
-
-//         const objExists = !!object
-//         const hasPermission = object?.createdById === userId
-//         return [objExists, hasPermission]
-
-//     } catch (error) {
-//         //hur funkar error i en importerad funktion? borde jag skicka NotFoundError och ForbiddenError här istället?
-//         throw new DatabaseError("something went wrong when checking for listing and permission")
-//     }
-// }
-
-// export async function verifyUserById(id: string, client: PrismaClient): Promise<undefined> {
-//     try {
-//         const user = await client.user.findUnique({
-//             where: {
-//                 id
-//             }
-//         })
-
-//         if (!user) throw new NotFoundError("User not found")
-
-//     } catch (error) {
-//         throw new DatabaseError("Could not verify user by id")
-//     }
-// }

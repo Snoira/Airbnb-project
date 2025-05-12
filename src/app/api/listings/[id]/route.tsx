@@ -18,13 +18,15 @@ import { getUserIdFromJWT, decrypt } from "@/utils/jwt";
 
 const prisma = new PrismaClient();
 
-export async function GET(options: APIOptions) {
+export async function GET(request: NextRequest, options: APIOptions) {
+  console.log("___________________ \n GET LISTING BY ID \n___________________");
+  
   const id = options.params.id;
   if (!id) throw new ValidationError("Failed to retrive id");
-  console.log("___________________ \n GET LISTING BY ID \n___________________");
 
   try {
     const listing = await getDBListingById(id);
+    if (!listing) throw new NotFoundError("Listing not found");
 
     return NextResponse.json(listing, { status: 200 });
   } catch (error: any) {
@@ -63,6 +65,7 @@ export async function PUT(request: NextRequest, options: APIOptions) {
     }
     
     const existingListing = await getDBListingById(id);
+    if (!existingListing) throw new NotFoundError("Listing not found");
     if (existingListing.createdById !== userId)
       throw new ForbiddenError("User is not allwed to update listing");
 
@@ -153,6 +156,9 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
     );
   }
 }
+
+
+
 //annan fil? api/listings/:id/book eller liknande?
 // export async function POST(request: NextRequest, options: APIOptions) {
 //     try {

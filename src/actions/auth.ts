@@ -14,32 +14,12 @@ import { redirect } from "next/navigation";
 
 const prisma = new PrismaClient();
 
-// export async function register(
-//   formData: UserRegistrationData
-// ): Promise<number> {
-//   try {
-//     const res = await fetch(`${url}register`, {
-//       method: "POST",
-//       body: JSON.stringify(formData),
-//     });
-
-//     if (res.ok) {
-//       return res.status;
-//     }
-
-//     return res.status;
-//   } catch (error: any) {
-//     throw new Error(error);
-//   }
-// }
-
 export async function register(formData: RegistrationData) {
   const [hasErrors, errorText] = registrationValidation(formData);
   if (hasErrors) console.error(errorText);
 
   const isRegistered = await getDBUserByEmail(
-    formData.email.toLowerCase(),
-    prisma
+    formData.email.toLowerCase()
   );
   if (isRegistered) console.error(`User already exists`);
 
@@ -90,19 +70,3 @@ export async function login(formData: LoginData) {
     return { success: false };
   }
 }
-
-// export async function login(formData: UserLoginData): Promise<number> {
-//   try {
-//     const res = await fetch(`${url}login`, {
-//       method: "POST",
-//       body: JSON.stringify(formData),
-//     });
-
-//     if (res.ok) {
-//       return res.status;
-//     }
-//     return res.status;
-//   } catch (error: any) {
-//     throw new Error(error);
-//   }
-// }
