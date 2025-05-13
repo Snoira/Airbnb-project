@@ -3,11 +3,11 @@ import { useState } from "react";
 import * as Yup from "yup";
 import { login } from "@/actions/auth";
 import { loginFormSchema } from "@/lib/definitions";
-import { UserLoginData } from "@/types/user";
+import { LoginData } from "@/types/user";
 import { useRouter } from "next/navigation";
 export function LoginForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState<UserLoginData>({
+  const [formData, setFormData] = useState<LoginData>({
     email: "",
     password: "",
   });

@@ -3,12 +3,12 @@ import { useState } from "react";
 import * as Yup from "yup";
 import { register } from "@/actions/auth";
 import { registerFormSchema } from "@/lib/definitions";
-import { UserRegistrationData } from "@/types/user";
+import { RegistrationData } from "@/types/user";
 import { useRouter } from "next/navigation";
 
 export function RegisterForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState<UserRegistrationData>({
+  const [formData, setFormData] = useState<RegistrationData>({
     name: "",
     email: "",
     password: "",
@@ -26,8 +26,11 @@ export function RegisterForm() {
     event.preventDefault();
     try {
       await registerFormSchema.validate(formData, { abortEarly: false });
-      await register(formData);
-      console.log("registered");
+      const {success} = await register(formData);
+      if (success) {
+        console.log("funkar");
+        router.push("/dashboard");
+      }
     } catch (error) {
       // återkommer med bättre errorhantering, form som ger feedback.
       if (error instanceof Yup.ValidationError) {

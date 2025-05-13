@@ -5,49 +5,54 @@ import { deleteBookingById, getBookingById, getListingById } from "@/utils/prism
 import { bookingData, BookingStatus } from "@/types/booking";
 import { generateDateRange } from "@/helpers/bookingHelpers"
 import { getVerifiedUserId } from "@/helpers/requestHelpers";
+import { APIOptions } from "@/types/general";
+import { getUserIdFromJWT } from "@/utils/jwt";
 
 const prisma = new PrismaClient()
-//behövs denne egentligen? nås med include annars.
-export async function GET(request: NextRequest, options: APIOptions) {
-    try {
-        const id = options.params.id
-        if (!id) throw new ValidationError("Could not get id")
+// export async function GET(request: NextRequest, options: APIOptions) {
+//     try {
+//         const id = options.params.id
+//         if (!id) throw new ValidationError("Could not get id")
         
-        // const userId = await getVerifiedUserId(request, prisma)
+//         const JWT = request.headers.get("Authorization")?.split(" ")[1];
+//         const userId = await getUserIdFromJWT(JWT);
+//         if (!userId) throw new ForbiddenError("User does not match request");
 
-        const booking = await getBookingById(id, prisma)
+//         const booking = await getBookingById(id, prisma)
 
-        // const hasPermission: boolean = (userId === booking.renterId || userId === booking.listingAgentId)
-        // if (!hasPermission) throw new ForbiddenError("User does not have permission to access booking")
+//         // const hasPermission: boolean = (userId === booking.renterId || userId === booking.listingAgentId)
+//         // if (!hasPermission) throw new ForbiddenError("User does not have permission to access booking")
 
-        return NextResponse.json(
-            { booking },
-            { status: 200 }
-        )
+//         return NextResponse.json(
+//             { booking },
+//             { status: 200 }
+//         )
 
-    } catch (error) {
-        if (error instanceof ValidationError ||
-            error instanceof NotFoundError ||
-            error instanceof DatabaseError)
-            return NextResponse.json(
-                { message: error.message },
-                { status: error.statusCode }
-            )
-        return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 }
-        )
-    }
-}
+//     } catch (error) {
+//         if (error instanceof ValidationError ||
+//             error instanceof NotFoundError ||
+//             error instanceof DatabaseError)
+//             return NextResponse.json(
+//                 { message: error.message },
+//                 { status: error.statusCode }
+//             )
+//         return NextResponse.json(
+//             { error: "Internal Server Error" },
+//             { status: 500 }
+//         )
+//     }
+// }
 
 export async function PATCH(request: NextRequest, options: APIOptions) {
     try {
         const id = options.params.id
         if (!id) throw new ValidationError("Could not get id")
 
-        // const userId = await getVerifiedUserId(request, prisma)
+        const JWT = request.headers.get("Authorization")?.split(" ")[1];
+        const userId = await getUserIdFromJWT(JWT);
+        if (!userId) throw new ForbiddenError("User does not match request");
 
-        const body: BookingStatus = await request.json()
+        const body:BookingStatus = await request.json().catch(() => {});
         if (!body.status) throw new ValidationError("Booking status is requried")
 
         const newStatus = body.status

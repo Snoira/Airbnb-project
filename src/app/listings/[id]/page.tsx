@@ -1,5 +1,6 @@
 import { getListingById } from "@/actions/listings";
-import { checkAuth } from "@/utils/jwt";
+import { getJWTFromCookie, decrypt } from "@/utils/jwt";
+import {Skeleton} from "@/components/ui/skeleton";
 
 type APIOptions = {
   params: {
@@ -11,15 +12,18 @@ export default async function Listing(options: APIOptions) {
   const id = options.params.id;
 
   const listing = await getListingById(id);
-  const isAuth = await checkAuth();
-  console.log("-------isAuth details page", isAuth);
+  const JWT = await getJWTFromCookie();
+  const user = await decrypt(JWT);
+  const isCreator = user?.id === listing?.createdById;
+  const isAdmin = user?.role === "ADMIN";
 
+
+  
   return (
     <div className="p-10">
-      <h1 className="text-lg pb-5">Listing Detail Page</h1>
       {listing && (
         <div className="pb-3">
-          <h3 className="text-md font-semibold pb-1">{listing.name}</h3>
+          <h1 className="text-xl font-semibold pb-1">{listing.name}</h1>
           <p>{listing.pricePerNight} kr per natt</p>
           <p className="pb-1">{listing.location}</p>
           <p>{listing.description}</p>

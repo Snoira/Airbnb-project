@@ -76,7 +76,7 @@ export async function getDBBookingById(
   bookingId: string,
   client?: PrismaClient,
   includeField?: string
-): Promise<Booking> {
+): Promise<Booking|null> {
   try {
     const includeFieldLookup = includeField
       ? {
@@ -94,9 +94,6 @@ export async function getDBBookingById(
       },
       ...includeFieldLookup,
     });
-
-    if (!booking)
-      throw new NotFoundError(`Could not find bookng, id: ${bookingId}`);
 
     return booking;
   } catch (error) {

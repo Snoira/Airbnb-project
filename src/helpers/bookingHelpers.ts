@@ -6,13 +6,5 @@ export function generateDateRange(start: Date, end: Date): Date[] {
         date.setDate(start.getDate() + i);
         return date;
     });
-
-    //jämför med 
-    // const requestedDates: Date[] = []
-
-    // for (let i = 0; i <= numberOfDays; i++) {
-    //     requestedDates.push(
-    //         add(new Date(checkin_date), { days: i })
-    //     )
-    // }
 }
+

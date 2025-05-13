@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 
 const prisma = new PrismaClient();
 
-export async function register(formData: RegistrationData) {
+export async function register(formData: RegistrationData): Promise<{success: boolean}> {
   const [hasErrors, errorText] = registrationValidation(formData);
   if (hasErrors) console.error(errorText);
 
@@ -37,9 +37,9 @@ export async function register(formData: RegistrationData) {
     const { password, ...safeUser } = newUser;
 
     await createSession(safeUser);
-    return redirect("/dashboard");
+    return { success: true };
   } catch (error: any) {
-    console.error("register user error ", error);
+    return { success: false };
   }
 }
 
