@@ -25,11 +25,10 @@ export default async function Listing(options: APIOptions) {
         <div className="pb-3">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl text-stone-800">{listing.name}</h1>
-            {isCreator ? (
-              <EditListing listing={listing} />
-            ) : isAdmin ? (
-              <DeleteButton id={listing.id} />
-            ) : null}
+            <div className="flex gap-2">
+              {isCreator && <EditListing listing={listing} />}
+              {(isAdmin || isCreator) && <DeleteButton id={listing.id} />}
+            </div>
           </div>
           <div className="grid grid-cols-4 grid-rows-2 gap-4 h-[300px] py-6">
             <Skeleton className="bg-stone-200 col-span-2 row-span-2 h-full w-full" />

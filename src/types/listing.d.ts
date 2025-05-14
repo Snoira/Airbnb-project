@@ -16,6 +16,7 @@ export const listingValidation = z.object({
     description: z.string().min(1, "Description is required"),
     location: z.string().min(1, "Location is required"),
     pricePerNight: z.number().min(1, "Price per night is required")
+    
 })
 
 type ListingFormData = z.infer<typeof listingValidation>;

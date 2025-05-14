@@ -10,7 +10,6 @@ import { ValidationError } from "@/utils/errors";
 import bcrypt from "bcryptjs";
 import { PrismaClient, User } from "@prisma/client";
 import { createSession } from "@/utils/jwt";
-import { redirect } from "next/navigation";
 
 const prisma = new PrismaClient();
 
