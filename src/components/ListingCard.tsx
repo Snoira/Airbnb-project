@@ -15,7 +15,7 @@ type Props = {
 
 export default function ListingCard({ listing }: Props) {
   return (
-    <Link key={listing.id} href={`/listings/${listing.id}`}>
+    <Link href={`/listings/${listing.id}`}>
       <Card className="w-[350px]">
         <div>
           <CardHeader>

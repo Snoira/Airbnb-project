@@ -6,8 +6,8 @@ import { getJWTFromCookie, decrypt } from "@/utils/jwt";
 import { redirect } from "next/navigation";
 import { getDBUserById } from "@/utils/prisma";
 import { getUserIdFromJWT } from "@/utils/jwt";
-import { listingValidation } from "@/utils/validators/listingValidator";
 import { getDBListingById } from "@/utils/prisma";
+import { listingSchema } from "@/utils/validators/listingValidator";
 
 const url = "/api/listings";
 const prisma = new PrismaClient();
@@ -22,14 +22,8 @@ export async function getListings(): Promise<Listing[] | null> {
   }
 }
 
-export async function getListingsWithBookingsByUserId() {
-  console.log("\n --GET LISTINGS W BOOKINGS AND USERID-- \n");
-
-  const userId = await getUserIdFromJWT();
-  if (!userId) return redirect("/signIn");
-
-  const user = await getDBUserById(userId);
-  if (!user) return redirect("/signIn");
+export async function getListingsWithBookingsByUserId(userId: string) {
+  console.log("\n --GET LISTINGS W BOOKINGS BY USER ID-- \n");
 
   try {
     const listings = await prisma.listing.findMany({
@@ -40,7 +34,7 @@ export async function getListingsWithBookingsByUserId() {
         bookings: true,
       },
     });
-    
+
     return listings;
   } catch (error) {
     console.log("could not fetch listing", error);
@@ -76,74 +70,41 @@ export async function createListing(
   return newListing;
 }
 
-export async function getListingById(id: string): Promise<Listing> {
-  const listing = await getDBListingById(id);
-  if (!listing) {
-    throw new Error("Listing not found");
-  }
-  return listing;
+export async function getListingById(id: string): Promise<Listing | null> {
+  return await getDBListingById(id);
 }
 
 export async function updateListingById(
   id: string,
   formData: ListingData
 ): Promise<Listing | null> {
-  try {
-    const cookieStore = cookies();
-    const session = cookieStore.get("session");
-    const JWT = await decrypt(session?.value);
+  const userId = await getUserIdFromJWT();
+  if (!userId) return redirect("/signIn");
 
-    const res = await fetch(`${url}/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(formData),
-      credentials: "include",
-      headers: {
-        cookie: `${JWT}`,
-      },
-    });
+  const updatedListing = await prisma.listing.update({
+    where: {
+      id,
+    },
+    data: {
+      name: formData.name,
+      description: formData.description,
+      location: formData.location,
+      pricePerNight: formData.pricePerNight,
+    },
+  });
 
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
-
-    if (res.status === 400) throw new Error("400, Validation error");
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
+  return updatedListing;
 }
 
-export async function deleteListingById(id: string) {
-  try {
-    const cookieStore = cookies();
-    const session = cookieStore.get("session");
-    const JWT = await decrypt(session?.value);
+export async function deleteListingById(id: string):Promise<void> {
+  const existingListing = await getDBListingById(id);
+  if (!existingListing) return;
 
-    if (!JWT) throw new Error("Could not get JWT");
-
-    const res = await fetch(`${url}/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${JWT}`,
-      },
-    });
-
-    if (res.ok) {
-      console.log("DELETED", res.status);
-    }
-
-    if (res.status === 400) throw new Error("400, Validation error");
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
-  } catch (error) {
-    console.log(error);
-  }
+  await prisma.listing.delete({
+    where: {
+      id,
+    },
+  });
 }
 
 export async function bookListingById(id: string): Promise<Booking | null> {

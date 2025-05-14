@@ -10,6 +10,7 @@ export function AuthNav({ isAuth, deleteHandler }: Props) {
 
   const handleLogout = async () => {
     await deleteHandler();
+    router.refresh()
   };
 
   const handleLogin = () => {
