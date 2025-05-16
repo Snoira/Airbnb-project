@@ -11,12 +11,12 @@ type ListingWithBookings = Prisma.ListingGetPayload<{
   include: { bookings: true };
 }>;
 
-export const listingValidation = z.object({
-    name: z.string().min(1, "Name is required"),
-    description: z.string().min(1, "Description is required"),
-    location: z.string().min(1, "Location is required"),
-    pricePerNight: z.number().min(1, "Price per night is required")
-    
-})
+export const listingSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  pricePerNight: z.number().min(1, "Price per night is required"),
+  reservedDates: z.array(z.date()).optional(),
+});
 
-type ListingFormData = z.infer<typeof listingValidation>;
+type ListingData = z.infer<typeof listingSchema>;
