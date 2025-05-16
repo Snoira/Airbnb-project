@@ -30,7 +30,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <div className="flex flex-col h-screen p-10">
-          <Header />
+        <Header />
           <div>{children}</div>
         </div>
       </body>

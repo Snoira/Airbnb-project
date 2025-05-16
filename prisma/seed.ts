@@ -13,6 +13,7 @@ type DBCount = { count: number };
 async function main() {
   await prisma.booking.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.contactInfo.deleteMany();
   await prisma.user.deleteMany();
 
   const staticUserIds = {
@@ -261,8 +262,8 @@ async function main() {
       listingAgentId: staticUserIds.alice,
       renterId: staticUserIds.bob,
       contactInfoId: contactInfoIds.bob,
-      checkin_date: new Date("2025-05-01"),
-      checkout_date: new Date("2025-05-05"),
+      checkin_date: new Date("2025-06-01"),
+      checkout_date: new Date("2025-06-05"),
       total_cost: 400,
       status: Status.PENDING,
     },

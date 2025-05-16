@@ -31,11 +31,13 @@ import {
 } from "@/components/ui/popover";
 
 const formSchema = z.object({
-  checkin_date: z.date({
-    required_error: "Please select a start date",
-  }),
-  checkout_date: z.date({
-    required_error: "Please select an end date",
+  dates: z.object({
+    from: z.date({
+      required_error: "Please select a start date",
+    }),
+    to: z.date({
+      required_error: "Please select an end date",
+    }),
   }),
   firstName: z.string().min(1, {
     message: "First name is required",
@@ -60,8 +62,10 @@ export function BookForm({ contactInfo, reservedDates }: Props) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      checkin_date: new Date(),
-      checkout_date: new Date(),
+      dates: {
+        from: new Date(),
+        to: new Date(),
+      },
       firstName: contactInfo?.firstName || "",
       lastName: contactInfo?.lastName || "",
       email: contactInfo?.email || "",
@@ -73,59 +77,31 @@ export function BookForm({ contactInfo, reservedDates }: Props) {
     // ✅ This will be type-safe and validated.
     console.log(values);
   }
+  console.log("reservedDates", reservedDates);
 
+  const isDateDisabled = (date: Date) => {
+    const isReserved = reservedDates.some((reservedDate) => {
+      console.log("reservedDate", reservedDate);
+
+      console.log("date", date);
+      return date === new Date(reservedDate);
+    });
+    console.log("isReserved", isReserved);
+    return isReserved || date < new Date();
+  };
   return (
     <div>
       <Card>
-        <CardHeader>Book your stay</CardHeader>
+        <CardHeader>
+          <CardTitle>Book your stay</CardTitle>
+        </CardHeader>
         <Form {...form}>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               <div className="flex gap-2">
                 <FormField
                   control={form.control}
-                  name="checkin_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="checkout_date"
+                  name="dates"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>End Date</FormLabel>
@@ -139,23 +115,31 @@ export function BookForm({ contactInfo, reservedDates }: Props) {
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? (
-                                format(field.value, "PPP")
+                              {field.value?.from ? (
+                                field.value.to ? (
+                                  <>
+                                    {format(field.value.from, "LLL dd, y")} -{" "}
+                                    {format(field.value.to, "LLL dd, y")}
+                                  </>
+                                ) : (
+                                  format(field.value.from, "LLL dd, y")
+                                )
                               ) : (
                                 <span>Pick a date</span>
                               )}
+
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
-                            mode="single"
+                            mode="range"
+                            defaultMonth={field.value?.from}
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
+                            numberOfMonths={2}
+                            disabled={(date) => date < new Date()}
                             initialFocus
                           />
                         </PopoverContent>

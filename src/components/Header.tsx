@@ -11,7 +11,7 @@ export default async function Header() {
   };
 
   return (
-    <header>
+    <header className="bg-white shadow-sm sticky top-0 z-10">
       <nav className="flex items-center justify-between p-6 lg:px-8">
         <div className="flex text-xl ">
           <Link href="/" className="-m-1.5 p-1.5">
