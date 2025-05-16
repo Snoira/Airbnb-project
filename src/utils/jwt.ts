@@ -53,9 +53,8 @@ export async function decrypt(
   }
 }
 
-export async function createSession(user: SafeUser): Promise<string> {
+export async function createSession(sessionData: SessionData) {
   const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000);
-  const sessionData = { id: user.id, role: user.role };
   const encryptedSession = await encrypt(sessionData); // Kryptera sessionData- bättre att kalla token?
 
   const cookieStore = cookies(); // Hämta cookieStore
@@ -66,7 +65,6 @@ export async function createSession(user: SafeUser): Promise<string> {
     sameSite: "lax",
     path: "/",
   });
-  return encryptedSession;
 }
 
 export async function deleteSession() {

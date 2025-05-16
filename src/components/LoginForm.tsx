@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import {
   Form,
@@ -21,6 +22,7 @@ const loginSchema = z.object({
 type LoginData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const [failedTry, setFailedTry] = useState(false);
   const router = useRouter();
 
   const form = useForm<LoginData>({
@@ -34,7 +36,12 @@ export function LoginForm() {
   const onSubmit = async (formData: LoginData) => {
     const { success } = await login(formData);
     if (success) {
-      router.push("/dashboard");
+      router.refresh();
+    } else {
+      setFailedTry(true);
+      setTimeout(() => {
+        setFailedTry(false);
+      }, 5000);
     }
   };
 
@@ -67,7 +74,13 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Register</Button>
+        <Button type="submit">Login</Button>
+        {failedTry && (
+          <div className="text-red-500 text-center">
+            <p>Invalid email or password</p>
+            <p>Forgot password?</p>
+          </div>
+        )}
       </form>
     </Form>
   );

@@ -13,6 +13,7 @@ import {
 import { Input } from "./ui/input";
 import { register } from "@/actions/auth";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const registrationSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,6 +23,7 @@ const registrationSchema = z.object({
 type RegistrationData = z.infer<typeof registrationSchema>;
 
 export function RegisterForm() {
+  const [failedTry, setFailedTry] = useState(false);
   const router = useRouter();
 
   const form = useForm<RegistrationData>({
@@ -36,8 +38,12 @@ export function RegisterForm() {
   const onSubmit = async (formData: RegistrationData) => {
     const { success } = await register(formData);
     if (success) {
-      console.log("funkar");
-      router.push("/dashboard");
+      router.refresh();
+    } else {
+      setFailedTry(true);
+      setTimeout(() => {
+        setFailedTry(false);
+      }, 5000);
     }
   };
 
@@ -84,6 +90,11 @@ export function RegisterForm() {
           )}
         />
         <Button type="submit">Register</Button>
+        {failedTry && (
+          <div className="text-red-500 text-center">
+            <p>There's already an account registered with this email</p>
+          </div>
+        )}
       </form>
     </Form>
   );

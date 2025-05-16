@@ -13,59 +13,45 @@ import { createSession } from "@/utils/jwt";
 
 const prisma = new PrismaClient();
 
-export async function register(formData: RegistrationData): Promise<{success: boolean}> {
-  const [hasErrors, errorText] = registrationValidation(formData);
-  if (hasErrors) console.error(errorText);
+export async function register(
+  formData: RegistrationData
+): Promise<{ success: boolean }> {
+  const isRegistered = await getDBUserByEmail(formData.email.toLowerCase());
+  if (isRegistered) return { success: false };
 
-  const isRegistered = await getDBUserByEmail(
-    formData.email.toLowerCase()
-  );
-  if (isRegistered) console.error(`User already exists`);
+  const newPassword = await bcrypt.hash(formData.password, 10);
 
-  const newPassword: string = await bcrypt.hash(formData.password, 10);
+  const newUser: User = await prisma.user.create({
+    data: {
+      email: formData.email.toLowerCase(),
+      password: newPassword,
+      name: formData.name,
+    },
+  });
 
-  try {
-    const newUser: User = await prisma.user.create({
-      data: {
-        email: formData.email.toLowerCase(),
-        password: newPassword,
-        name: formData.name,
-      },
-    });
+  const sessionData = { role: newUser.role, id: newUser.id };
 
-    const { password, ...safeUser } = newUser;
-
-    await createSession(safeUser);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false };
-  }
+  await createSession(sessionData);
+  return { success: true };
 }
 
-export async function login(formData: LoginData):Promise<{success: boolean}> {
-  const [hasErrors, errors] = loginValidation(formData);
-  if (hasErrors) {
-    console.log(errors);
-    return { success: false };
-  }
-  const user = await getDBUserByEmail(formData.email.toLowerCase(), prisma);
-  if (!user)
-    throw new ValidationError(`Could not find user with matching credentials`);
+export async function login(
+  formData: LoginData
+): Promise<{ success: boolean }> {
+  const user = await getDBUserByEmail(formData.email.toLowerCase());
+  if (!user) return { success: false };
 
   const isPasswordMatch = await bcrypt.compare(
     formData.password,
     user.password
   );
-  if (!isPasswordMatch) {
-    throw new ValidationError(`Could not find user with matching credentials`);
-  }
+  if (!isPasswordMatch) return { success: false };
 
-  const { password, ...safeUser } = user;
-  try {
-    await createSession(safeUser);
-    return { success: true };
-  } catch (error: any) {
-    console.error("login user error ", error);
-    return { success: false };
-  }
+  const sessionData = {
+    id: user.id,
+    role: user.role,
+  };
+
+  await createSession(sessionData);
+  return { success: true };
 }
