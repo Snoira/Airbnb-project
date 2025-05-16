@@ -1,91 +1,74 @@
-"use client";
-import { useState } from "react";
-import * as Yup from "yup";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "./ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { Input } from "./ui/input";
 import { login } from "@/actions/auth";
-import { loginFormSchema } from "@/lib/definitions";
-import { LoginData } from "@/types/user";
 import { useRouter } from "next/navigation";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+type LoginData = z.infer<typeof loginSchema>;
+
 export function LoginForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState<LoginData>({
-    email: "",
-    password: "",
+
+  const form = useForm<LoginData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      await loginFormSchema.validate(formData, { abortEarly: false });
-      const { success } = await login(formData);
-      if (success) {
-        console.log("funkar");
-        router.push("/dashboard");
-      } else {
-        console.log("funkar inte");
-      }
-    } catch (error) {
-      // återkommer med bättre errorhantering, form som ger feedback.
-      if (error instanceof Yup.ValidationError) {
-        const errors = error.inner.map((err) => {
-          return `${err.path}: ${err.message}`;
-        });
-        console.log(errors.join(", "));
-      }
+  const onSubmit = async (formData: LoginData) => {
+    const { success } = await login(formData);
+    if (success) {
+      router.push("/dashboard");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Email
-        </label>
-        <input
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          type="text"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <FormField
+          control={form.control}
           name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          aria-required="true"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="name@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-2">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Password
-        </label>
-        <input
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          type="password"
+        <FormField
+          control={form.control}
           name="password"
-          placeholder="********"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          aria-required="true"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <button
-        type="submit"
-        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200"
-      >
-        Login
-      </button>
-    </form>
+        <Button type="submit">Register</Button>
+      </form>
+    </Form>
   );
 }

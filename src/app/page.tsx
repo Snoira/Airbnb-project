@@ -7,7 +7,7 @@ export default async function Home() {
   return (
     <>
       <main>
-        <div className="mt-16 flex flex-wrap gap-6 justify-center border-t border-stone-200 pt-10 sm:pt-16">
+        <div className="flex flex-wrap gap-6 justify-center pt-8 sm:pt-16">
           {listings &&
             listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />

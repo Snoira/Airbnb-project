@@ -3,7 +3,7 @@ import { useState } from "react";
 import * as Yup from "yup";
 import { Listing } from "@prisma/client";
 import { listingFormSchema } from "@/lib/definitions";
-import { ListingFormData } from "@/types/listing";
+import { ListingData } from "@/types/listing";
 import { ErrorObject } from "@/types/general";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,7 @@ const INIT_FORM_DATA = {
 
 export function ListingForm({ showForm, oldListing }: Props) {
   const router = useRouter();
-  const [formData, setFormData] = useState<ListingFormData>(
+  const [formData, setFormData] = useState<ListingData>(
     oldListing
       ? {
           name: oldListing.name,

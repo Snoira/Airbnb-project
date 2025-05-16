@@ -42,7 +42,7 @@ export async function register(formData: RegistrationData): Promise<{success: bo
   }
 }
 
-export async function login(formData: LoginData) {
+export async function login(formData: LoginData):Promise<{success: boolean}> {
   const [hasErrors, errors] = loginValidation(formData);
   if (hasErrors) {
     console.log(errors);

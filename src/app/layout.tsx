@@ -29,8 +29,8 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex flex-col h-screen p-10">
         <Header />
+        <div className="flex flex-col">
           <div>{children}</div>
         </div>
       </body>
