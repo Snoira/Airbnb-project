@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { getDBUserByEmail } from "@/utils/prisma";
@@ -23,10 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isPasswordMatch = await bcrypt.compare(
-      body.password,
-      user.password
-    );
+    const isPasswordMatch = await bcrypt.compare(body.password, user.password);
 
     if (!isPasswordMatch) {
       throw new ValidationError(
@@ -47,13 +43,10 @@ export async function POST(request: NextRequest) {
         token: JWT,
       },
     });
-  } catch (error:unknown) {
-if(error instanceof z.ZodError) {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
       const issues = error.issues.map((issue) => issue.message).join(", ");
-      return NextResponse.json(
-        { message: issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: issues }, { status: 400 });
     }
     if (error instanceof ValidationError) {
       return NextResponse.json(
@@ -61,9 +54,6 @@ if(error instanceof z.ZodError) {
         { status: error.statusCode }
       );
     }
-    return NextResponse.json(
-      { message: "unknown error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "unknown error" }, { status: 500 });
   }
 }
