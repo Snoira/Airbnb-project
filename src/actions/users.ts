@@ -1,26 +1,19 @@
-import { SafeUser } from "@/types/user";
+"use server";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000/";
-const url = new URL(`${BASE_URL}api/users/me/`);
+import { PrismaClient, ContactInfo } from "@prisma/client";
+import { getUserIdFromJWT } from "@/utils/jwt";
 
-export async function getUser(): Promise<SafeUser | null> {
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-    });
+const prisma = new PrismaClient();
 
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
+export const getContactInfoByUserId = async (): Promise<ContactInfo | null> => {
+  const userId = await getUserIdFromJWT();
+  if (!userId) return null;
 
-    if (res.status === 400) throw new Error("400, Validation error");
-    if (res.status === 404) throw new Error("404, Listing not found");
-    if (res.status === 500) throw new Error("500, Internal server error");
-    throw new Error(`${res.status}`);
-  } catch (error) {
-    console.log("Could not get user", error);
-    return null;
-  }
-}
+  const contactInfo = await prisma.contactInfo.findUnique({
+    where: {
+      userId,
+    },
+  });
+
+  return contactInfo;
+};
