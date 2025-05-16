@@ -9,16 +9,17 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  email         String     @unique
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  email         String        @unique
   name          String
   password      String
-  role          Role       @default(USER)
-  bookings      Booking[]  @relation("BookingAsRenter")
-  listingAgent  Booking[]  @relation("BookingsAsAgent")
+  role          Role          @default(USER)
+  contactInfo   ContactInfo?
+  bookings      Booking[]     @relation("BookingAsRenter")
+  listingAgent  Booking[]     @relation("BookingsAsAgent")
   listings      Listing[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model Listing {
@@ -36,18 +37,31 @@ model Listing {
 }
 
 model Booking {
-id              String     @id @default(auto()) @map("_id") @db.ObjectId
-listingId       String
-listing         Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
-listingAgentId  String
-listingAgent    User       @relation("BookingsAsAgent", fields: [listingAgentId], references: [id])
-renterId        String
-renter          User       @relation("BookingAsRenter", fields: [renterId], references: [id])
-createdAt       DateTime   @default(now())
-checkin_date    DateTime
-checkout_date   DateTime
-total_cost      Float
-status          Status     @default(PENDING)
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  listingId       String
+  listing         Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingAgentId  String
+  listingAgent    User          @relation("BookingsAsAgent", fields: [listingAgentId], references: [id])
+  renterId        String
+  renter          User          @relation("BookingAsRenter", fields: [renterId], references: [id])
+  contactInfoId   String
+  contactInfo     ContactInfo   @relation(fields: [contactInfoId], references: [id])
+  createdAt       DateTime      @default(now())
+  checkin_date    DateTime
+  checkout_date   DateTime
+  total_cost      Float
+  status          Status     @default(PENDING)
+}
+
+model ContactInfo {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  firstName       String
+  lastName        String
+  email           String
+  phoneNumber     String
+  user            User       @relation(fields: [userId], references: [id], onUpdate: Restrict)
+  userId          String     @unique    
+  bookings        Booking[]     
 }
 
 enum Role {

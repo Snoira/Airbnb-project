@@ -1,18 +1,14 @@
-import {
-  PrismaClient,
-  Status,
-  Role,
-  User,
-  Listing,
-  Booking,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { Booking, Listing, Status, User, ContactInfo } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generateDateRange } from "../src/helpers/bookingHelpers";
 
 const prisma = new PrismaClient();
 
 type UserData = Omit<User, "createdAt" | "updatedAt">;
 type ListingData = Omit<Listing, "createdAt" | "updatedAt">;
 type BookingData = Omit<Booking, "createdAt" | "updatedAt">;
+type DBCount = { count: number };
 
 async function main() {
   await prisma.booking.deleteMany();
@@ -30,6 +26,19 @@ async function main() {
     heidi: "507f1f77bcf86cd799439018",
     ivan: "507f1f77bcf86cd799439019",
     judy: "507f1f77bcf86cd79943901a",
+  };
+
+  const contactInfoIds = {
+    alice: "507f1f77bcf86cd799439034",
+    bob: "507f1f77bcf86cd799439035",
+    carol: "507f1f77bcf86cd799439036",
+    dave: "507f1f77bcf86cd799439037",
+    eve: "507f1f77bcf86cd799439038",
+    frank: "507f1f77bcf86cd799439039",
+    grace: "507f1f77bcf86cd79943903a",
+    heidi: "507f1f77bcf86cd79943903b",
+    ivan: "507f1f77bcf86cd79943903c",
+    judy: "507f1f77bcf86cd79943903d",
   };
 
   const password = await bcrypt.hash("pass1234", 10);
@@ -251,6 +260,7 @@ async function main() {
       listingId: "507f1f77bcf86cd79943901b",
       listingAgentId: staticUserIds.alice,
       renterId: staticUserIds.bob,
+      contactInfoId: contactInfoIds.bob,
       checkin_date: new Date("2025-05-01"),
       checkout_date: new Date("2025-05-05"),
       total_cost: 400,
@@ -261,6 +271,7 @@ async function main() {
       listingId: "507f1f77bcf86cd79943901d",
       listingAgentId: staticUserIds.carol,
       renterId: staticUserIds.dave,
+      contactInfoId: contactInfoIds.dave,
       checkin_date: new Date("2025-06-10"),
       checkout_date: new Date("2025-06-15"),
       total_cost: 500,
@@ -271,6 +282,7 @@ async function main() {
       listingId: "507f1f77bcf86cd79943901f",
       listingAgentId: staticUserIds.eve,
       renterId: staticUserIds.frank,
+      contactInfoId: contactInfoIds.frank,
       checkin_date: new Date("2025-07-01"),
       checkout_date: new Date("2025-07-07"),
       total_cost: 600,
@@ -281,6 +293,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439021",
       listingAgentId: staticUserIds.grace,
       renterId: staticUserIds.heidi,
+      contactInfoId: contactInfoIds.heidi,
       checkin_date: new Date("2025-04-10"),
       checkout_date: new Date("2025-04-13"),
       total_cost: 300,
@@ -291,6 +304,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439023",
       listingAgentId: staticUserIds.ivan,
       renterId: staticUserIds.judy,
+      contactInfoId: contactInfoIds.judy,
       checkin_date: new Date("2025-08-15"),
       checkout_date: new Date("2025-08-18"),
       total_cost: 350,
@@ -301,6 +315,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439026",
       listingAgentId: staticUserIds.bob,
       renterId: staticUserIds.carol,
+      contactInfoId: contactInfoIds.carol,
       checkin_date: new Date("2025-05-20"),
       checkout_date: new Date("2025-05-25"),
       total_cost: 550,
@@ -311,6 +326,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439027",
       listingAgentId: staticUserIds.carol,
       renterId: staticUserIds.ivan,
+      contactInfoId: contactInfoIds.ivan,
       checkin_date: new Date("2025-09-01"),
       checkout_date: new Date("2025-09-04"),
       total_cost: 300,
@@ -321,6 +337,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439028",
       listingAgentId: staticUserIds.dave,
       renterId: staticUserIds.frank,
+      contactInfoId: contactInfoIds.frank,
       checkin_date: new Date("2025-10-10"),
       checkout_date: new Date("2025-10-12"),
       total_cost: 200,
@@ -331,6 +348,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439029",
       listingAgentId: staticUserIds.eve,
       renterId: staticUserIds.ivan,
+      contactInfoId: contactInfoIds.ivan,
       checkin_date: new Date("2025-11-05"),
       checkout_date: new Date("2025-11-09"),
       total_cost: 400,
@@ -341,6 +359,7 @@ async function main() {
       listingId: "507f1f77bcf86cd799439024",
       listingAgentId: staticUserIds.judy,
       renterId: staticUserIds.bob,
+      contactInfoId: contactInfoIds.bob,
       checkin_date: new Date("2025-12-01"),
       checkout_date: new Date("2025-12-06"),
       total_cost: 500,
@@ -348,21 +367,129 @@ async function main() {
     },
   ];
 
-  const dataBaseUsers = await prisma.user.createMany({
+  const contactInfoData: ContactInfo[] = [
+    // {
+    //   id: contactInfoIds.alice,
+    //   firstName: "Alice",
+    //   lastName: "Smith",
+    //   email: "alice@example.com",
+    //   phoneNumber: "123-456-7890",
+    //   userId: staticUserIds.alice,
+    // },
+    {
+      id: contactInfoIds.bob,
+      firstName: "Bob",
+      lastName: "Johnson",
+      email: "bob@example.com",
+      phoneNumber: "234-567-8901",
+      userId: staticUserIds.bob,
+    },
+    {
+      id: contactInfoIds.carol,
+      firstName: "Carol",
+      lastName: "Williams",
+      email: "carol@example.com",
+      phoneNumber: "345-678-9012",
+      userId: staticUserIds.carol,
+    },
+    {
+      id: contactInfoIds.dave,
+      firstName: "Dave",
+      lastName: "Brown",
+      email: "dave@example.com",
+      phoneNumber: "456-789-0123",
+      userId: staticUserIds.dave,
+    },
+    // {
+    //   id: contactInfoIds.eve,
+    //   firstName: "Eve",
+    //   lastName: "Jones",
+    //   email: "eve@example.com",
+    //   phoneNumber: "567-890-1234",
+    //   userId: staticUserIds.eve,
+    // },
+    {
+      id: contactInfoIds.frank,
+      firstName: "Frank",
+      lastName: "Garcia",
+      email: "frank@example.com",
+      phoneNumber: "678-901-2345",
+      userId: staticUserIds.frank,
+    },
+    // {
+    //   id: contactInfoIds.grace,
+    //   firstName: "Grace",
+    //   lastName: "Martinez",
+    //   email: "grace@example.com",
+    //   phoneNumber: "789-012-3456",
+    //   userId: staticUserIds.grace,
+    // },
+    {
+      id: contactInfoIds.heidi,
+      firstName: "Heidi",
+      lastName: "Hernandez",
+      email: "heidi@example.com",
+      phoneNumber: "890-123-4567",
+      userId: staticUserIds.heidi,
+    },
+    {
+      id: contactInfoIds.ivan,
+      firstName: "Ivan",
+      lastName: "Lopez",
+      email: "ivan@example.com",
+      phoneNumber: "901-234-5678",
+      userId: staticUserIds.ivan,
+    },
+    {
+      id: contactInfoIds.judy,
+      firstName: "Judy",
+      lastName: "Gonzalez",
+      email: "judy@example.com",
+      phoneNumber: "012-345-6789",
+      userId: staticUserIds.judy,
+    },
+  ];
+
+  const dbUserCount: DBCount = await prisma.user.createMany({
     data: userData,
   });
 
-  const dataBaseListings = await prisma.listing.createMany({
+  const dbContactInfoCount: DBCount = await prisma.contactInfo.createMany({
+    data: contactInfoData,
+  });
+
+  const dbListingCount: DBCount = await prisma.listing.createMany({
     data: listingData,
   });
 
-  const dataBaseBookings = await prisma.booking.createMany({
+  const dbBookingCount: DBCount = await prisma.booking.createMany({
     data: bookingData,
   });
 
-  console.log("users created: ", dataBaseUsers);
-  console.log("listings created: ", dataBaseListings);
-  console.log("bookings created: ", dataBaseBookings);
+  let bookedDates: { [listingId: string]: Date[] } = {};
+
+  for (const booking of bookingData) {
+    const requestedDates = generateDateRange(
+      booking.checkin_date,
+      booking.checkout_date
+    );
+
+    const reservedDates = bookedDates[booking.listingId] || [];
+    bookedDates[booking.listingId] = [...reservedDates, ...requestedDates];
+  }
+
+  for (const listingId in bookedDates) {
+    const reservedDates = bookedDates[listingId];
+    await prisma.listing.update({
+      where: { id: listingId },
+      data: { reservedDates },
+    });
+  }
+
+  console.log("users created: ", dbUserCount);
+  console.log("listings created: ", dbListingCount);
+  console.log("bookings created: ", dbBookingCount);
+  console.log("contact info created: ", dbContactInfoCount);
   console.log("Seeding complete ✅");
 }
 
@@ -375,10 +502,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-
-// main()
-//   .catch((e) => {
-//     console.error("❌ Error during seed: ", e);
-//     process.exit(1);
-//   })
-//   .finally(() => prisma.$disconnect());
