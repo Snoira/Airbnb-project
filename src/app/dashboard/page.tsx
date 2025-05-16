@@ -9,12 +9,12 @@ export default async function Dashboard() {
   const listings = await getListingsWithBookingsByUserId(userId);
 
   return (
-    <div>
+    <div className=" p-10 bg-stone-50 flex flex-col items-start">
       <div className="flex justify-between p-2">
         <h1 className="text-2xl font-semibold">Your listings</h1>
       </div>
 
-      <div className="flex flex-wrap gap-6 py-6">
+      <div className="flex flex-wrap justify-center align-center gap-6 py-6">
         {listings && (
           <>
             <NewListingCard />

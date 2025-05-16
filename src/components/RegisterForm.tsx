@@ -1,112 +1,101 @@
-"use client";
-import { useState } from "react";
-import * as Yup from "yup";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "./ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { Input } from "./ui/input";
 import { register } from "@/actions/auth";
-import { registerFormSchema } from "@/lib/definitions";
-import { RegistrationData } from "@/types/user";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+const registrationSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  name: z.string().min(1, "Name is required"),
+});
+type RegistrationData = z.infer<typeof registrationSchema>;
 
 export function RegisterForm() {
+  const [failedTry, setFailedTry] = useState(false);
   const router = useRouter();
-  const [formData, setFormData] = useState<RegistrationData>({
-    name: "",
-    email: "",
-    password: "",
+
+  const form = useForm<RegistrationData>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
   });
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      await registerFormSchema.validate(formData, { abortEarly: false });
-      const {success} = await register(formData);
-      if (success) {
-        console.log("funkar");
-        router.push("/dashboard");
-      }
-    } catch (error) {
-      // återkommer med bättre errorhantering, form som ger feedback.
-      if (error instanceof Yup.ValidationError) {
-        const errors = error.inner.map((err) => {
-          return `${err.path}: ${err.message}`;
-        });
-        console.log("REGISTRATIONFORM ERROR", errors.join(", "));
-      }
+  const onSubmit = async (formData: RegistrationData) => {
+    const { success } = await register(formData);
+    if (success) {
+      router.refresh();
+    } else {
+      setFailedTry(true);
+      setTimeout(() => {
+        setFailedTry(false);
+      }, 5000);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Name
-        </label>
-        <input
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          type="text"
-          id="name"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <FormField
+          control={form.control}
           name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          aria-required="true"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-2">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Email
-        </label>
-        <input
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          type="text"
-          id="email"
+        <FormField
+          control={form.control}
           name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          aria-required="true"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="name@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-2">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Password
-        </label>
-        <input
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          type="password"
-          id="password"
+        <FormField
+          control={form.control}
           name="password"
-          placeholder="********"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          aria-required="true"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <button
-        type="submit"
-        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200"
-      >
-        Register as user
-      </button>
-    </form>
+        <Button type="submit">Register</Button>
+        {failedTry && (
+          <div className="text-red-500 text-center">
+            <p>There's already an account registered with this email</p>
+          </div>
+        )}
+      </form>
+    </Form>
   );
 }
