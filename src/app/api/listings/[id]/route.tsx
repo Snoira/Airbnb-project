@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Listing } from "@prisma/client";
-import {
-  ValidationError,
-  NotFoundError,
-  DatabaseError,
-  ForbiddenError,
-} from "@/utils/errors";
-import { deleteDBBookingById, getDBListingById } from "@/utils/prisma";
+import { ValidationError, NotFoundError, ForbiddenError } from "@/utils/errors";
+import { getDBListingById } from "@/utils/prisma";
 import { APIOptions } from "@/types/general";
 import { getUserIdFromJWT, decrypt } from "@/utils/jwt";
 import { z } from "zod";

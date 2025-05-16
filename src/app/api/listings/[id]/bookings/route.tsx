@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ContactInfo } from "@prisma/client";
 import {
   ValidationError,
   NotFoundError,
@@ -10,13 +10,25 @@ import { getDBListingById, getDBUserById } from "@/utils/prisma";
 import { generateDateRange } from "@/helpers/bookingHelpers";
 import { getUserIdFromJWT, decrypt } from "@/utils/jwt";
 import { APIOptions } from "@/types/general";
+import { z } from "zod";
+
+const contactInfoSchema = z.object({
+  email: z.string().email("Invalid email"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+const bookingSchema = z.object({
+  checkin_date: z.string().min(1, "Check in date is required"),
+  checkout_date: z.string().min(1, "Check out date is required"),
+  contactInfo: contactInfoSchema.optional(),
+});
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest, options: APIOptions) {
   try {
     const id = options.params.id;
-    if (!id) throw new ValidationError("Failed to retrive id");
 
     const JWT = request.headers.get("Authorization")?.split(" ")[1];
     const user = await decrypt(JWT);
@@ -31,6 +43,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
           listingId: id,
         },
       });
+
       if (!bookings) throw new NotFoundError("Couldn't find listing");
 
       return NextResponse.json({ bookings }, { status: 200 });
@@ -39,12 +52,8 @@ export async function GET(request: NextRequest, options: APIOptions) {
     throw new ForbiddenError(
       "You are not authorized to view this listing's bookings"
     );
-  } catch (error: any) {
-    if (
-      error instanceof ValidationError ||
-      error instanceof NotFoundError ||
-      error instanceof ForbiddenError
-    )
+  } catch (error: unknown) {
+    if (error instanceof NotFoundError || error instanceof ForbiddenError)
       return NextResponse.json(
         { error: error.message },
         { status: error.statusCode }
@@ -59,7 +68,6 @@ export async function GET(request: NextRequest, options: APIOptions) {
 export async function POST(request: NextRequest, options: APIOptions) {
   try {
     const id = options.params.id;
-    if (!id) throw new ValidationError("Failed to retrive id");
 
     const JWT = request.headers.get("Authorization")?.split(" ")[1];
     const userId = await getUserIdFromJWT(JWT);
@@ -68,38 +76,25 @@ export async function POST(request: NextRequest, options: APIOptions) {
     const user = await getDBUserById(userId);
     if (!user) throw new ForbiddenError("No user found");
 
-    const listing = await getDBListingById(id); //skicka in objekt som specificerar fält?
-
+    const listing = await getDBListingById(id);
     if (!listing) throw new NotFoundError("Listing not found");
 
     if (listing.createdById === userId)
       throw new ForbiddenError("Can't book your own listing");
     // or should you be able to book your own listing? add "status" to propery? Active/Paused/Deleted or similar?
 
-    const body = await request.json().catch(() => null);
-    if (!body) throw new ValidationError("Invalid request body");
-    if (!body.checkin_date)
-      throw new ValidationError("Check in date is required");
-    if (!body.checkout_date)
-      throw new ValidationError("Check out date is required");
-    //check for contact info
-    let contactInfo = await prisma.contactInfo.findUnique({
+    const body = bookingSchema.parse(await request.json().catch(() => {}));
+
+    let contactInfo: ContactInfo | null = await prisma.contactInfo.findUnique({
       where: {
         userId: userId,
       },
     });
-    console.log("Contact info: ", contactInfo);
+
     if (!contactInfo) {
-      if (
-        !body.contactInfo ||
-        !body.contactInfo.email ||
-        !body.contactInfo.phoneNumber ||
-        !body.contactInfo.firstName ||
-        !body.contactInfo.lastName
-      ) {
+      if (!body.contactInfo) {
         throw new ValidationError("Contact info is required");
       }
-
       contactInfo = await prisma.contactInfo.create({
         data: {
           userId: userId,
@@ -110,6 +105,7 @@ export async function POST(request: NextRequest, options: APIOptions) {
         },
       });
     }
+
     if (!contactInfo) new DatabaseError("Couldn't create contact info");
 
     const checkin_date = new Date(body.checkin_date);
@@ -122,16 +118,12 @@ export async function POST(request: NextRequest, options: APIOptions) {
 
     const requestedDates = generateDateRange(checkin_date, checkout_date);
     if (isBooked(requestedDates, listing.reservedDates)) {
-      return NextResponse.json(
-        { message: "Listing is already booked for the requested dates" },
-        { status: 400 }
+      throw new ValidationError(
+        "Listing is already booked for the requested dates"
       );
     }
 
-    const numberOfDays: number = requestedDates.length;
-    const totalCost = numberOfDays * listing.pricePerNight;
-
-    console.log("Total cost: ", totalCost);
+    const totalCost = requestedDates.length * listing.pricePerNight;
 
     // only reserved when booking is confirmed?
     const reservedDates = [...listing.reservedDates, ...requestedDates];
@@ -159,10 +151,11 @@ export async function POST(request: NextRequest, options: APIOptions) {
     });
 
     return NextResponse.json({ newBooking }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (
       error instanceof ValidationError ||
       error instanceof NotFoundError ||
+      error instanceof ForbiddenError ||
       error instanceof DatabaseError
     ) {
       return NextResponse.json(
@@ -170,7 +163,10 @@ export async function POST(request: NextRequest, options: APIOptions) {
         { status: error.statusCode }
       );
     }
-    console.log("Error", error);
+    if (error instanceof z.ZodError) {
+      const issues = error.issues.map((issue) => issue.message).join(", ");
+      return NextResponse.json({ message: issues }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
