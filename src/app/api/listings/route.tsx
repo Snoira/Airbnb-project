@@ -6,36 +6,39 @@ import {
   DatabaseError,
   ForbiddenError,
 } from "@/utils/errors";
-import { decrypt } from "@/utils/jwt";
+import { getUserIdFromJWT } from "@/utils/jwt";
 import { getDBUserById } from "@/utils/prisma";
 import { listingValidation } from "@/utils/validators/listingValidator";
 import { ListingData } from "@/types/listing";
+import { z } from "zod";
+
 // type IncludeObj = {
 //   include: {
 //     [key: string]: boolean;
 //   };
 // };
 
-const prisma = new PrismaClient()
+const listingData = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  pricePerNight: z.number().min(1, "Price per night is required"),
+});
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
     console.log("\n --CREATE LISTING-- \n");
 
     const JWT = request.headers.get("Authorization")?.split(" ")[1];
-    const sessionData = await decrypt(JWT);
-    const userId = sessionData?.id ?? null;
-    if (!userId) throw new ForbiddenError("User does not match request");
+    const userId = await getUserIdFromJWT(JWT);
+    if (!userId) throw new ForbiddenError("Unauthorized user");
 
     const validatedUser = await getDBUserById(userId);
-    if (!validatedUser) throw new ForbiddenError("User does not match request");
-    
-    const body:ListingData = await request.json().catch(() => {});
-    const [hasErrors, errorText] = listingValidation(body);
-    if (hasErrors) throw new ValidationError(errorText);
-    
-    if (typeof body.pricePerNight === "string") parseFloat(body.pricePerNight);
-    const reservedDates: Date[] = [];
+    if (!validatedUser) throw new ForbiddenError("Unauthorized user");
+
+    const body = listingData.parse(await request.json().catch(() => {}));
 
     const newListing = await prisma.listing.create({
       data: {
@@ -44,24 +47,22 @@ export async function POST(request: NextRequest) {
         description: body.description,
         location: body.location,
         pricePerNight: body.pricePerNight,
-        reservedDates,
+        reservedDates: [],
       },
     });
 
-
     return NextResponse.json(newListing, { status: 201 });
-  } catch (error: any) {
-    if (
-      error instanceof ValidationError ||
-      error instanceof NotFoundError ||
-      error instanceof DatabaseError
-    )
+  } catch (error: unknown) {
+    if (error instanceof ForbiddenError) {
       return NextResponse.json(
         { error: error.message },
         { status: error.statusCode }
       );
-
-    console.error("Unexpected error in createListing:", error);
+    }
+    if (error instanceof z.ZodError) {
+      const issues = error.issues.map((issue) => issue.message).join(", ");
+      return NextResponse.json({ message: issues }, { status: 400 });
+    }
 
     return NextResponse.json(
       { error: "Internal Server Error" },
@@ -97,8 +98,6 @@ export async function GET(request: NextRequest) {
     //   if (!userId) throw new ForbiddenError("User does not match request");
     //   const validatedUser = await getDBUserById(userId);
     //   if (!validatedUser) throw new ForbiddenError("User does not match request");
-
-   
 
     //   where.createdById = userId;
     //   include = {
