@@ -1,5 +1,7 @@
-import {User} from "@prisma/client";
+import { User } from "@prisma/client";
 
-type UserRegistrationData = Omit<User, "id" | "createdAt" | "updatedAt">;
+type RegistrationData = Pick<User, "name" | "email" | "password">;
 
-type UserLoginData = Omit<User, "id" | "createdAt" | "updatedAt" | "name">;
+type LoginData = Pick<User, "email" | "password">;
+
+export type SafeUser = Omit<User, "password">;
