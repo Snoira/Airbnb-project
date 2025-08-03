@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: bnb-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/bnb-db
+      - JWT_SECRET=HemligheternasKammare
+
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6
+    container_name: bnb-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    command: --replSet rs0
+
+volumes:
+  mongo-data:
