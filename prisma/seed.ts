@@ -11,10 +11,10 @@ type BookingData = Omit<Booking, "createdAt" | "updatedAt">;
 type DBCount = { count: number };
 
 async function main() {
-  await prisma.booking.deleteMany();
-  await prisma.listing.deleteMany();
-  await prisma.contactInfo.deleteMany();
-  await prisma.user.deleteMany();
+  // await prisma.booking.deleteMany();
+  // await prisma.listing.deleteMany();
+  // await prisma.contactInfo.deleteMany();
+  // await prisma.user.deleteMany();
 
   const staticUserIds = {
     alice: "507f1f77bcf86cd799439011",
