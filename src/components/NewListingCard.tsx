@@ -21,7 +21,11 @@ export function NewListingCard() {
       {isActive ? (
         <div className="fixed inset-0 z-10 gird place-items-center bg-stone-900/50">
           <div className="relative p-10">
-            <ListingForm showForm={showForm} />
+            <Card className="w-[350px]">
+              <div className="p-6">
+                <ListingForm showForm={showForm} />
+              </div>
+            </Card>
           </div>
         </div>
       ) : (

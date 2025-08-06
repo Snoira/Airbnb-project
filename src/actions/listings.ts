@@ -2,7 +2,7 @@
 import { PrismaClient, Listing, Booking } from "@prisma/client";
 import { ListingData, ListingWithBookings } from "@/types/listing";
 import { cookies } from "next/headers";
-import { getJWTFromCookie, decrypt } from "@/utils/jwt";
+import { getJWTFromCookie, decrypt, deleteSession } from "@/utils/jwt";
 import { redirect } from "next/navigation";
 import { getDBUserById } from "@/utils/prisma";
 import { getUserIdFromJWT } from "@/utils/jwt";
@@ -48,12 +48,17 @@ export async function createListing(
   console.log("\n --CREATE LISTING-- \n");
 
   const userId = await getUserIdFromJWT();
-  if (!userId) return redirect("/signIn");
-  const validatedUser = await getDBUserById(userId);
-  if (!validatedUser) return redirect("/signIn");
+  if (!userId) {
+    await deleteSession();
+    return redirect("/signIn");
+  }
 
-  if (typeof formData.pricePerNight === "string")
-    parseFloat(formData.pricePerNight);
+  const validatedUser = await getDBUserById(userId);
+  if (!validatedUser) {
+    await deleteSession();
+    return redirect("/signIn");
+  }
+
   const reservedDates: Date[] = [];
 
   const newListing = await prisma.listing.create({

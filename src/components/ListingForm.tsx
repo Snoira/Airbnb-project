@@ -1,19 +1,28 @@
 "use client";
-import { useState } from "react";
-import * as Yup from "yup";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Listing } from "@prisma/client";
-import { listingFormSchema } from "@/lib/definitions";
-import { ListingData } from "@/types/listing";
-import { ErrorObject } from "@/types/general";
-import { Button } from "@/components/ui/button";
+import { z } from "zod";
+import { Button } from "./ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { Input } from "./ui/input";
+import { createListing } from "@/actions/listings";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
-import { createListing, updateListingById } from "@/actions/listings";
 
-type Props = {
-  oldListing?: Listing;
-  showForm: (boolean: boolean) => void;
-};
+const listingSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  pricePerNight: z.number().min(1, "Price per night is required"),
+  reservedDates: z.array(z.date()).optional(),
+});
 
 const INIT_FORM_DATA = {
   name: "",
@@ -22,63 +31,40 @@ const INIT_FORM_DATA = {
   pricePerNight: 0,
 };
 
-export function ListingForm({ showForm, oldListing }: Props) {
+type ListingData = z.infer<typeof listingSchema>;
+
+type Props = {
+  oldListing?: Listing;
+  showForm: (boolean: boolean) => void;
+};
+
+export function ListingForm({ oldListing, showForm }: Props) {
   const router = useRouter();
-  const [formData, setFormData] = useState<ListingData>(
-    oldListing
-      ? {
-          name: oldListing.name,
-          description: oldListing.description,
-          location: oldListing.location,
-          pricePerNight: oldListing.pricePerNight,
-        }
-      : INIT_FORM_DATA
-  );
-  const [error, setError] = useState<ErrorObject>({});
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = event.target;
+  const form = useForm<ListingData>({
+    resolver: zodResolver(listingSchema),
+    defaultValues: {
+      name: oldListing?.name || "",
+      description: oldListing?.description || "",
+      location: oldListing?.location || "",
+      pricePerNight: oldListing?.pricePerNight || 0,
+    },
+  });
 
-    setFormData({
-      ...formData,
-      [name]: type === "number" ? parseFloat(value) : value,
-    });
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      await listingFormSchema.validate(formData, { abortEarly: false });
-      setError({});
-      const listing = oldListing
-        ? await updateListingById(oldListing.id, formData)
-        : await createListing(formData);
-      console.log("!!!new listing: ", listing);
-      if (!!listing) {
-        setFormData(INIT_FORM_DATA);
-        showForm(false);
-        router.refresh();
-      }
-    } catch (error) {
-      // återkommer med bättre errorhantering, form som ger feedback.
-      if (error instanceof Yup.ValidationError) {
-        error.inner.map((err) => {
-          setError({
-            ...error,
-            [`${err.path}`]: `${err.message}`,
-          });
-        });
-      }
-      console.log("ERROR", error);
-    }
+  const onSubmit = async (formData: ListingData) => {
+    const listing = await createListing(formData);
+    if (listing) {
+      form.reset(INIT_FORM_DATA);
+      showForm(false);
+      router.refresh();
+    } //else redirect to something went wring page
   };
 
   return (
-    <Card className="w-[350px]">
-      <form onSubmit={handleSubmit} className="p-6  space-y-2">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
         <div className="flex justify-between items-center">
           <h1 className="text-stone-900 text-lg font-medium">
-            {" "}
             {oldListing ? "EDIT" : "CREATE"} LISTING
           </h1>
           <Button
@@ -91,99 +77,73 @@ export function ListingForm({ showForm, oldListing }: Props) {
           </Button>
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="listingName"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Name
-          </label>
-          <input
-            className={`w-full px-4 py-2 border ${
-              error.name ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500`}
-            type="text"
-            id="listingName"
-            name="name"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            aria-required="true"
-          />
-          {error.name && <p>{error.name}</p>}
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Description
-          </label>
-          <input
-            className={`w-full px-4 py-2 border ${
-              error.description ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500`}
-            type="text"
-            id="description"
-            name="description"
-            placeholder="Description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-            aria-required="true"
-          />
-          {error.description && <p>{error.description}</p>}
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="location"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Location
-          </label>
-          <input
-            className={`w-full px-4 py-2 border ${
-              error.location ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500`}
-            type="text"
-            id="location"
-            name="location"
-            placeholder="Location"
-            value={formData.location}
-            onChange={handleChange}
-            required
-            aria-required="true"
-          />
-          {error.location && <p>{error.location}</p>}
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="pricePerNight"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Price Per Night
-          </label>
-          <input
-            className={`w-full px-4 py-2 border ${
-              error.pricePerNight ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500`}
-            type="number"
-            name="pricePerNight"
-            value={formData.pricePerNight}
-            onChange={handleChange}
-            required
-            aria-required="true"
-          />
-          {error.pricePerNight && <p>{error.pricePerNight}</p>}
-        </div>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Input placeholder="Description" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Location</FormLabel>
+              <FormControl>
+                <Input placeholder="Location" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="pricePerNight"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Price Per Night</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button
           type="submit"
-          className="w-full py-3 px-4 bg-stone-400 text-white font-semibold rounded-lg hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200"
+          className=" py-3 px-4 bg-stone-400 text-white font-semibold rounded-lg hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:bg-amber-400 transition duration-200"
         >
           Submit
         </Button>
       </form>
-    </Card>
+    </Form>
   );
 }
