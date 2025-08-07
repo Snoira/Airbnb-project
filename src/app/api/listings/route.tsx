@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ForbiddenError } from "@/utils/errors";
 import { getUserIdFromJWT } from "@/utils/jwt";
 import { getDBUserById } from "@/utils/prisma";
+import { NotFoundError } from "@/utils/errors";
 import { z } from "zod";
 
 const listingSchema = z.object({
@@ -59,12 +60,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   console.log("\n --GET LISTINGS-- \n");
   try {
     const listings = await prisma.listing.findMany();
+    if (!listings || listings.length === 0) throw new NotFoundError("No listings found");
+    
     return NextResponse.json(listings, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 }
