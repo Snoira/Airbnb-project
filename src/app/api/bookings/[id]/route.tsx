@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Status } from "@prisma/client";
 import { DatabaseError, ForbiddenError, NotFoundError, ValidationError } from "@/utils/errors";
-import { deleteBookingById, getBookingById, getListingById } from "@/utils/prisma"
-import { bookingData, BookingStatus } from "@/types/booking";
+import { deleteDBBookingById, getDBBookingById, getDBListingById } from "@/utils/prisma"
+import { BookingStatus } from "@/types/booking";
 import { generateDateRange } from "@/helpers/bookingHelpers"
-import { getVerifiedUserId } from "@/helpers/requestHelpers";
 import { APIOptions } from "@/types/general";
 import { getUserIdFromJWT } from "@/utils/jwt";
 
@@ -62,19 +61,19 @@ export async function PATCH(request: NextRequest, options: APIOptions) {
 
         if (!statusValues.includes(newStatus)) throw new ValidationError(`Status not one of: ${statusValues.join(", ")}`)
 
-        const booking = await getBookingById(id, prisma)
+        const booking = await getDBBookingById(id, prisma)
 
         if (!booking) throw new NotFoundError(`Could not find bookng, id: ${id}`)
 
         // if (booking.listingAgentId !== userId) throw new ForbiddenError("User must be listing agent")
 
-        if (booking.status !== "pending") throw new ValidationError(`Booking is already set to ${booking.status}`)
+        if (booking.status !== "PENDING") throw new ValidationError(`Booking is already set to ${booking.status}`)
 
-        if (newStatus === "accepted") {
+        if (newStatus === "ACCEPTED") {
             //vidareutveckling att skapa en ny model med "booked dates" istället för detta?
             const requestedDates = generateDateRange(booking.checkin_date, booking.checkout_date)
 
-            const listing = await getListingById(booking.listingId, prisma)
+            const listing = await getDBListingById(booking.listingId, prisma)
             if (!listing) throw new NotFoundError(`Could not find listing, id: ${booking.listingId}`)
 
             const reservedDates = listing.reservedDates.concat(requestedDates)
@@ -127,10 +126,10 @@ export async function DELETE(request: NextRequest, options: APIOptions) {
 
         // const userId = await getVerifiedUserId(request, prisma)
 
-        const booking = await getBookingById(id, prisma)
+        const booking = await getDBBookingById(id)
         // if (booking.renterId !== userId) throw new ForbiddenError("User is not allowed to delete booking")
 
-        await deleteBookingById(id, prisma)
+        await deleteDBBookingById(id)
 
         return new Response(null, { status: 204 })
 
