@@ -1,5 +1,4 @@
 import * as Yup from "yup";
-import { ListingData } from "@/types/listing";
 
 export const registerFormSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email format").required("Required"),

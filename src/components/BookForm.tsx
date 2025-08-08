@@ -77,18 +77,16 @@ export function BookForm({ contactInfo, reservedDates }: Props) {
     // ✅ This will be type-safe and validated.
     console.log(values);
   }
-  console.log("reservedDates", reservedDates);
 
   const isDateDisabled = (date: Date) => {
+    // probably timezone issues here, but this is a quick fix
     const isReserved = reservedDates.some((reservedDate) => {
-      console.log("reservedDate", reservedDate);
-
-      console.log("date", date);
-      return date === new Date(reservedDate);
+      return new Date(date).getUTCDate() === new Date(reservedDate).getUTCDate();
     });
-    console.log("isReserved", isReserved);
+
     return isReserved || date < new Date();
   };
+
   return (
     <div>
       <Card>
@@ -139,7 +137,7 @@ export function BookForm({ contactInfo, reservedDates }: Props) {
                             selected={field.value}
                             onSelect={field.onChange}
                             numberOfMonths={2}
-                            disabled={(date) => date < new Date()}
+                            disabled={isDateDisabled}
                             initialFocus
                           />
                         </PopoverContent>

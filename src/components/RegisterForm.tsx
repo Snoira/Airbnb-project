@@ -92,7 +92,7 @@ export function RegisterForm() {
         <Button type="submit">Register</Button>
         {failedTry && (
           <div className="text-red-500 text-center">
-            <p>There's already an account registered with this email</p>
+            <p>Something went wrong, try again later</p>
           </div>
         )}
       </form>

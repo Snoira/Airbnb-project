@@ -1,7 +1,6 @@
 "use server";
 import * as Jose from "jose";
 import { cookies } from "next/headers";
-import { SafeUser } from "@/types/user";
 import {Role} from "@prisma/client";
 
 type JWTUserPayload = {
@@ -33,21 +32,19 @@ export async function decrypt(
 ): Promise<JWTUserPayload | null> {
   if (!token) return null;
   try {
-    console.log("decrypting token");
     const output = await Jose.jwtVerify(token, encodedSecret, {
       algorithms: ["HS256"],
     });
 
     return output.payload as JWTUserPayload;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof Jose.errors.JWTExpired) {
-      // await deleteSession()
       //implementera funktionalitet som varnar och frågar om ny token ska göras?
-      console.error("JWT is invalid:", error.code);
+      console.error("JWT is expired:", error.code);
     } else if (error instanceof Jose.errors.JWTInvalid) {
       console.error("JWT is invalid:", error.code);
     } else {
-      console.error("JWT verification failed:", error.code);
+      console.error("JWT verification failed:");
     }
     return null;
   }

@@ -1,134 +1,63 @@
-import { PrismaClient, User, Listing, Booking, Role } from "@prisma/client";
-import { DatabaseError, NotFoundError } from "@/utils/errors";
+import { PrismaClient, User, Listing, Booking } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 export async function getDBUserByEmail(
-  email: string,
-  client?: PrismaClient
+  email: string
 ): Promise<User | null> {
-  console.log("!!!GETUSERBYEMAIL");
+  const user = await prisma.user.findUnique({
+    where: {
+      email
+    }
+  });
 
-  const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
-  try {
-    const user = await db.user.findUnique({
-      where: {
-        email,
-      },
-    });
-
-    return user;
-  } catch (error) {
-    console.log("!!!ERROR", error);
-    throw new DatabaseError("Something went wrong when looking for user");
-  }
+  return user;
 }
 
 export async function getDBUserById(
   userId: string,
-  client?: PrismaClient,
-  includeField?: string
 ): Promise<User | null> {
-  try {
-    const includeFieldLookup = includeField
-      ? {
-          BookingAsRenter: { include: { BookingAsRenter: true } },
-          BookingsAsAgent: { include: { BookingAsAgent: true } },
-        }[includeField]
-      : {};
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId
+    }
+  });
 
-    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
-
-    const user = await db.user.findUnique({
-      where: {
-        id: userId,
-      },
-      ...includeFieldLookup,
-    });
-
-    return user;
-  } catch (error) {
-    throw new DatabaseError("Could not get user");
-  }
+  return user;
 }
 
 export async function getDBListingById(
   listingId: string,
-  client?: PrismaClient,
-): Promise<Listing| null> {
-  console.log("!!!GETLISTINGBYID");
-  try {
-    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
+): Promise<Listing | null> {
 
-    const listing = await db.listing.findUnique({
-      where: {
-        id: listingId,
-      }
-    });
+  const listing = await prisma.listing.findUnique({
+    where: {
+      id: listingId,
+    }
+  });
 
-    return listing;
-  } catch (error) {
-    throw new DatabaseError("something went wrong when getting listing");
-  }
+  return listing;
 }
 
 export async function getDBBookingById(
   bookingId: string,
-  client?: PrismaClient,
-  includeField?: string
-): Promise<Booking|null> {
-  try {
-    const includeFieldLookup = includeField
-      ? {
-          listing: { include: { listing: true } },
-          renter: { include: { renter: true } },
-          listingAgent: { include: { listingAgent: true } },
-        }[includeField]
-      : {};
+): Promise<Booking | null> {
+  const booking = await prisma.booking.findUnique({
+    where: {
+      id: bookingId,
+    },
+  });
 
-    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
-
-    const booking = await db.booking.findUnique({
-      where: {
-        id: bookingId,
-      },
-      ...includeFieldLookup,
-    });
-
-    return booking;
-  } catch (error) {
-    throw new DatabaseError(`Could not get booking`);
-  }
+  return booking;
 }
 
 export async function deleteDBBookingById(
   bookingId: string,
-  client?: PrismaClient
 ): Promise<undefined> {
-  try {
-    const db = client ?? prisma; //<<<<<<<<<<<<<<<<<<<<<<<
+  await prisma.booking.delete({
+    where: {
+      id: bookingId,
+    },
+  });
 
-    await db.booking.delete({
-      where: {
-        id: bookingId,
-      },
-    });
-  } catch (error) {
-    throw new DatabaseError(`Could not delete booking, id: ${bookingId}`);
-  }
-}
-
-export async function getDBBookingsByFieldId(field:string, Id:string ):Promise<Booking[]>{
-  try {
-    console.log("WHERE", {[field]: Id})
-    const bookings = await prisma.booking.findMany({
-      where: {
-        [field]: Id,
-      }
-    })
-
-    return bookings
-  } catch (error) {
-    throw new DatabaseError("Could not get bookings by listing id")
-  }
 }
