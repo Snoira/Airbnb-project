@@ -31,10 +31,8 @@ export default async function middleware(request: NextRequest) {
       console.log("\n");
 
       return NextResponse.next();
-    } catch (error: any) {
-      console.log("Error validating token: ", error.message);
-
-      return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
+    } catch (error: unknown) {
+      return NextResponse.json({ error }, { status: 401 });
     }
   }
 

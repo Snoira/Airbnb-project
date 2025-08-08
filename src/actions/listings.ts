@@ -1,13 +1,12 @@
 "use server";
 import { PrismaClient, Listing, Booking } from "@prisma/client";
-import { ListingData, ListingWithBookings } from "@/types/listing";
+import { ListingData } from "@/types/listing";
 import { cookies } from "next/headers";
-import { getJWTFromCookie, decrypt } from "@/utils/jwt";
+import { decrypt } from "@/utils/jwt";
 import { redirect } from "next/navigation";
 import { getDBUserById } from "@/utils/prisma";
 import { getUserIdFromJWT } from "@/utils/jwt";
 import { getDBListingById } from "@/utils/prisma";
-import { listingSchema } from "@/utils/validators/listingValidator";
 
 const url = "/api/listings";
 const prisma = new PrismaClient();
@@ -16,6 +15,7 @@ export async function getListings(): Promise<Listing[] | null> {
   try {
     const listings = await prisma.listing.findMany();
     return listings;
+
   } catch (error) {
     console.log("could not fetch listing", error);
     return [];
@@ -36,6 +36,7 @@ export async function getListingsWithBookingsByUserId(userId: string) {
     });
 
     return listings;
+    
   } catch (error) {
     console.log("could not fetch listing", error);
     return [];

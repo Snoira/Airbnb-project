@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import { RegistrationData } from "@/types/user";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { registrationValidation } from "@/utils/validators/userValidator";
 import { getDBUserByEmail } from "@/utils/prisma";
 import { ValidationError, DatabaseError } from "@/utils/errors";
 import { encrypt } from "@/utils/jwt";

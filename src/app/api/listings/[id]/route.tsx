@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, options: APIOptions) {
     if (!listing) throw new NotFoundError("Listing not found");
 
     return NextResponse.json(listing, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof ValidationError || error instanceof NotFoundError) {
       return NextResponse.json(
         { error: error.message },

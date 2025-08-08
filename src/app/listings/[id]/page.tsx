@@ -3,7 +3,6 @@ import { getJWTFromCookie, decrypt } from "@/utils/jwt";
 import { Skeleton } from "@/components/ui/skeleton";
 import DeleteButton from "@/components/DeleteButton";
 import { EditListing } from "@/components/EditListing";
-import { getBookingsByListingId } from "@/actions/bookings";
 import { BookForm } from "@/components/BookForm";
 import { getContactInfoByUserId } from "@/actions/users";
 
@@ -22,7 +21,6 @@ export default async function Listing(options: APIOptions) {
   const isCreator = user?.id === listing?.createdById;
   const isAdmin = user?.role === "ADMIN";
   const contactInfo = await getContactInfoByUserId();
-  const bookings = await getBookingsByListingId(id);
 
   return (
     <>
